@@ -36,6 +36,8 @@ callApiUsuario();
 const firstintent = 'Diary';
 const secondintent = 'CloseDiary';
 const thirdintent = 'ReadAgenda';
+const fourthintent = 'ReadEmail';
+const fiftintent = 'StartEmail';
 
 app.fallback((conv, params) => {
     const intent = conv.intent;
@@ -74,6 +76,22 @@ app.fallback((conv, params) => {
                     respuesta = conv.ask(`${dateTime} ${summary}`);
                 }
                 return respuesta;
+            })
+        case fourthintent:
+            return callApiGetEmailInformation(usuarioID).then(data => {
+                var subject = data.subject;
+                var message = data.message;
+                var send = `Asunto: ${subject}. Mensaje: ${message}`;
+                var respuesta = undefined;
+                console.log()
+                respuesta = conv.ask(send);
+                callApiSetStartEmail(usuarioID, send);
+                return respuesta;
+            })
+        case fiftintent:
+            return callApiSetStartEmail(usuarioID).then(data => {
+                return conv.ask(`Se inicializó el correo`);
+
             })
         default:
             return conv.ask(`No entendí lo que me dijo, repita porfavor`);
@@ -151,5 +169,41 @@ function callApiGetLeerAgenda(usuarioid) {
         });
     });
 }
+
+function callApiGetEmailInformation(usuarioid) {
+    let data = JSON.stringify({ userId: usuarioid });
+    console.log(data);
+    return new Promise((resolve, reject) => {
+        const options = {
+            url: 'http://smartmirror-api.azurewebsites.net/GetEmailInformations',
+            method: 'POST',
+            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+            body: data
+        };
+
+        request(options, function(error, requestInternal, body) {
+            resolve(JSON.parse(body));
+        });
+    });
+}
+
+
+function callApiSetStartEmail(usuarioid, description) {
+    let data = JSON.stringify({ userId: usuarioid, description: description });
+    console.log(data);
+
+    const options = {
+        url: 'http://smartmirror-api.azurewebsites.net/SetStartEmail',
+        method: 'POST',
+        headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+        body: data
+    };
+
+    request(options, function(error, requestInternal, body) {
+        resolve(body);
+    });
+
+}
+
 // Set the DialogflowApp object to handle the HTTPS POST request.
 exports.dialogflowFirebaseFulfillment = functions.https.onRequest(app);
