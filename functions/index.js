@@ -14,24 +14,26 @@ const functions = require('firebase-functions');
 const app = dialogflow({ debug: true });
 
 var usuarioID = "";
+var sixintent='RoomNumber'
 
 
-function callApiUsuario() {
+// function callApiUsuario() {
 
-    const options = {
-        url: 'http://smartmirror-api.azurewebsites.net/GetUser',
-        method: 'POST',
-        headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
-        body: JSON.stringify({ roomNumber: 140 })
-    };
+//     const options = {
+//         url: 'http://smartmirror-api.azurewebsites.net/GetUser',
+//         method: 'POST',
+//         headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+//         body: JSON.stringify({ roomNumber: 140 })
+//     };
 
-    request(options, function(error, requestInternal, body) {
-        let usuario = JSON.parse(body);
-        usuarioID = usuario.id;
-    });
+//     request(options, function(error, requestInternal, body) {
+//         let usuario = JSON.parse(body);
+//         usuarioID = usuario.id;
+//     });
 
-}
-callApiUsuario();
+// }
+
+// callApiUsuario();
 
 const firstintent = 'Diary';
 const secondintent = 'CloseDiary';
@@ -93,6 +95,25 @@ app.fallback((conv, params) => {
                 return conv.ask(`Se inicializó el correo`);
 
             })
+        case sixintent:
+            console.log(params);
+            var roomNumber = params.number;
+            return getMirrorID(roomNumber).then(data => {
+                switch (data) {
+                    case 1:
+                        console.log(usuarioID);
+                        return conv.ask(`La habitación ${roomNumber} fue asociada correctamente a tu cuenta google`);
+                    case 2:
+                        return conv.ask(`Esta habitación no cuenta con un Smart Mirror`);
+                    case 3:
+                        return conv.ask(`Esta habitación no se encuentra disponible`);
+                    case 4:
+                        return conv.ask(`Este número de habitación no existe`);
+                    default:
+                        return conv.ask('');
+                }
+
+            });
         default:
             return conv.ask(`No entendí lo que me dijo, repita porfavor`);
 
@@ -205,5 +226,62 @@ function callApiSetStartEmail(usuarioid, description) {
 
 }
 
+function callApiUsuario(mirrorID) {
+    return new Promise((resolve, reject) => {
+        const options = {
+            url: 'http://smartmirror-api.azurewebsites.net/GetUser',
+            method: 'POST',
+            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+            body: JSON.stringify({ mirrorID: mirrorID })
+        };
+
+        request(options, function(error, requestInternal, body) {
+            let usuario = JSON.parse(body);
+            resolve(usuario.id);
+            // usuarioID = usuario.id;
+        });
+    });
+}
+
+function getMirrorID(roomNumber) {
+    return new Promise((resolve, reject) => {
+        const options = {
+            url: 'https://tp-ires-api.azurewebsites.net/v1/management/habitacion/' + roomNumber,
+            method: 'GET',
+            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' }
+
+        };
+
+        request(options, function(error, requestInternal, body) {
+
+           
+            let respuesta = JSON.parse(body);
+
+            if (respuesta.statusCode === 200) {
+                if (respuesta.result) {
+                    if (respuesta.result.mirrorId !== 0) {
+                        return callApiUsuario(respuesta.result.mirrorId).then(data => {
+                            usuarioID = data;
+                            resolve(1);
+                            return;
+                        });
+                    } else {
+                        resolve(2);
+                    }
+                } else {
+                    resolve(3);
+                }
+
+            }else{
+                resolve(4);
+            }
+
+
+
+            // usuarioID = usuario.id;
+
+        });
+    });
+}
 // Set the DialogflowApp object to handle the HTTPS POST request.
 exports.dialogflowFirebaseFulfillment = functions.https.onRequest(app);
