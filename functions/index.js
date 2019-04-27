@@ -52,12 +52,21 @@ app.fallback((conv, params) => {
             // usuarioID = usuarioID.replace('\'', '');
             console.log(orden2, usuarioID);
             return callUpdateDiaries(orden2, usuarioID).then(data => {
-                return conv.ask(`Mostrando agenda ${orden}`);
+                if(usuarioID === ''){
+                    return conv.ask(`Ingrese el número de habitación primero`);
+                }else{
+                    return conv.ask(`Mostrando agenda ${orden}`);
+                }
+                
             });
         case secondintent:
             console.log(usuarioID);
             return callApiOcultarAgenda(usuarioID).then(data => {
-                return conv.ask(`Cerrando agenda`);
+                if(usuarioID === ''){
+                    return conv.ask(`Ingrese el número de habitación primero`);
+                }else{
+                    return conv.ask(`Cerrando agenda`);
+                }
             });
         case thirdintent:
             console.log(usuarioID);
@@ -68,7 +77,9 @@ app.fallback((conv, params) => {
                 var dateTime = data.dateTime;
                 var respuesta = undefined;
                 console.log()
-                if (location !== null && description === null) {
+                if(usuarioID === ''){
+                    respuesta = conv.ask(`Ingrese el número de habitación primero`);
+                }else if (location !== null && description === null) {
                     respuesta = conv.ask(`${dateTime} ${summary} en ${location}`);
                 } else if (location === null && description !== null) {
                     respuesta = conv.ask(`${dateTime} ${summary}. Como detalle adicional, ${description} `);
