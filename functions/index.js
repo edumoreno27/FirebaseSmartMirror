@@ -14,7 +14,6 @@ const functions = require('firebase-functions');
 const app = dialogflow({ debug: true });
 
 var usuarioID = "";
-var sixintent='RoomNumber'
 
 
 // function callApiUsuario() {
@@ -40,10 +39,45 @@ const secondintent = 'CloseDiary';
 const thirdintent = 'ReadAgenda';
 const fourthintent = 'ReadEmail';
 const fiftintent = 'StartEmail';
+const sixintent = 'RoomNumber';
+const seventhintent = 'UpdateServicesHotels';
+const eightintent = 'CloseServiceHotel';
 
 app.fallback((conv, params) => {
     const intent = conv.intent;
     switch (intent) {
+        case eightintent:
+            console.log(usuarioID);
+            return callApiOcultarHotelServicios(usuarioID).then(data => {
+                if (usuarioID === '') {
+                    return conv.ask(`Ingrese el número de habitación primero`);
+                } else {
+                    return conv.ask(`Cerrando información de servicio`);
+                }
+            });
+        case seventhintent:
+            console.log(params);
+            var orden3 = params.number;
+            var orden4 = orden3 - 1;
+            console.log(orden4, usuarioID);
+            // usuarioID = usuarioID.replace('\'', '');
+            console.log(orden4, usuarioID);
+            return callUpdateHotelServices(orden4, usuarioID).then(data => {
+                console.log("serviceid", data);
+                return getServiceInfortion(data.serviceId).then(resultado => {
+                    let objeto = resultado;
+                    console.log(objeto);
+                    if (usuarioID === '') {
+                        return conv.ask(`Ingrese el número de habitación primero`);
+                    } else {
+                        return conv.ask(`${objeto.result.serviceType.name} ${objeto.result.name}. ${objeto.result.description}`);
+                    }
+                });
+
+
+
+
+            });
         case firstintent:
             console.log(params);
             var orden = params.number;
@@ -52,19 +86,19 @@ app.fallback((conv, params) => {
             // usuarioID = usuarioID.replace('\'', '');
             console.log(orden2, usuarioID);
             return callUpdateDiaries(orden2, usuarioID).then(data => {
-                if(usuarioID === ''){
+                if (usuarioID === '') {
                     return conv.ask(`Ingrese el número de habitación primero`);
-                }else{
+                } else {
                     return conv.ask(`Mostrando agenda ${orden}`);
                 }
-                
+
             });
         case secondintent:
             console.log(usuarioID);
             return callApiOcultarAgenda(usuarioID).then(data => {
-                if(usuarioID === ''){
+                if (usuarioID === '') {
                     return conv.ask(`Ingrese el número de habitación primero`);
-                }else{
+                } else {
                     return conv.ask(`Cerrando agenda`);
                 }
             });
@@ -77,9 +111,9 @@ app.fallback((conv, params) => {
                 var dateTime = data.dateTime;
                 var respuesta = undefined;
                 console.log()
-                if(usuarioID === ''){
+                if (usuarioID === '') {
                     respuesta = conv.ask(`Ingrese el número de habitación primero`);
-                }else if (location !== null && description === null) {
+                } else if (location !== null && description === null) {
                     respuesta = conv.ask(`${dateTime} ${summary} en ${location}`);
                 } else if (location === null && description !== null) {
                     respuesta = conv.ask(`${dateTime} ${summary}. Como detalle adicional, ${description} `);
@@ -151,6 +185,24 @@ app.fallback((conv, params) => {
 //               de mierda, eres un gil y morirás gil conchetumare, si quieres vamo encontrarnos en puente nuevo, vamo
 //                a mecharnos pe conchetumare, pavo de mierda`);
 
+function callUpdateHotelServices(orden, usuarioid) {
+    let data = JSON.stringify({ 'order': orden, 'userId': usuarioid });
+    console.log(data);
+    return new Promise((resolve, reject) => {
+        const options = {
+            url: 'http://smartmirror-api.azurewebsites.net/UpdateServicesHotels',
+            method: 'POST',
+            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+            body: data
+        };
+
+        request(options, function(error, requestInternal, body) {
+            resolve(JSON.parse(body));
+        });
+    });
+}
+
+
 function callUpdateDiaries(orden, usuarioid) {
     let data = JSON.stringify({ 'order': orden, 'userId': usuarioid });
     console.log(data);
@@ -184,6 +236,24 @@ function callApiOcultarAgenda(usuarioid) {
         });
     });
 }
+
+function callApiOcultarHotelServicios(usuarioid) {
+    let data = JSON.stringify({ userId: usuarioid });
+    console.log(data);
+    return new Promise((resolve, reject) => {
+        const options = {
+            url: 'http://smartmirror-api.azurewebsites.net/SetAllHotelServices',
+            method: 'POST',
+            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+            body: data
+        };
+
+        request(options, function(error, requestInternal, body) {
+            resolve(body);
+        });
+    });
+}
+
 
 function callApiGetLeerAgenda(usuarioid) {
     let data = JSON.stringify({ userId: usuarioid });
@@ -265,7 +335,7 @@ function getMirrorID(roomNumber) {
 
         request(options, function(error, requestInternal, body) {
 
-           
+
             let respuesta = JSON.parse(body);
 
             if (respuesta.statusCode === 200) {
@@ -283,7 +353,7 @@ function getMirrorID(roomNumber) {
                     resolve(3);
                 }
 
-            }else{
+            } else {
                 resolve(4);
             }
 
@@ -291,6 +361,24 @@ function getMirrorID(roomNumber) {
 
             // usuarioID = usuario.id;
 
+        });
+    });
+}
+
+function getServiceInfortion(ServideID) {
+    return new Promise((resolve, reject) => {
+        const options = {
+            url: 'https://tp-ires-api.azurewebsites.net/v1/services/' + ServideID,
+            method: 'GET',
+            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' }
+
+        };
+
+        request(options, function(error, requestInternal, body) {
+
+
+            let respuesta = JSON.parse(body);
+            resolve(respuesta);
         });
     });
 }
