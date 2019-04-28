@@ -14,7 +14,7 @@ const functions = require('firebase-functions');
 const app = dialogflow({ debug: true });
 
 var usuarioID = "";
-
+var NumeroHabitacion = undefined;
 
 // function callApiUsuario() {
 
@@ -42,10 +42,55 @@ const fiftintent = 'StartEmail';
 const sixintent = 'RoomNumber';
 const seventhintent = 'UpdateServicesHotels';
 const eightintent = 'CloseServiceHotel';
+const nineintent = 'BookService';
+const tenintent = 'BookServiceYes';
+const elevenintent = 'BookServiceYesCustom';
+
+var servicioIDGlobal = undefined;
+var estaciaIDGlobal = undefined;
+
 
 app.fallback((conv, params) => {
     const intent = conv.intent;
     switch (intent) {
+        case elevenintent:
+            var fecha = params.date;
+            var hora = params.time;
+            fecha = fecha.substring(0, 11);
+            hora = hora.substring(11, 19);
+            var fechafirme = fecha + hora;
+            return ReservarServicio(estaciaIDGlobal, servicioIDGlobal, fechafirme, 0).then(resultado => {
+                let respuesta = undefined;
+                if (resultado.status === 'Created') {
+                    respuesta = conv.ask(`La reserva fue realizada exitosamente`);
+                }
+                return respuesta;
+            })
+
+        case tenintent:
+            return getServiceInfortion(servicioIDGlobal).then(objeto => {
+                let serviceTypeID = objeto.result.serviceType.serviceTypeId;
+                if (serviceTypeID === 3) {
+                    return conv.ask(`Consultando los platos`);
+                } else {
+                    return conv.ask(`Ingrese la hora y fecha de la reserva`);
+                }
+            });
+
+
+        case nineintent:
+            var orden5 = params.number;
+            var orden6 = orden5 - 1;
+            return getServiceIDByOrder(usuarioID, orden6).then(result => {
+                servicioIDGlobal = result.serviceId;
+                return getMirrorIDReserva(NumeroHabitacion).then(data => {
+                    estaciaIDGlobal = data.result.estanciaId;
+                    return getServiceInfortion(servicioIDGlobal).then(objeto => {
+                        return conv.ask(`¿Está seguro de reservar el servicio de ${objeto.result.serviceType.name} ${objeto.result.name}?`);
+                    })
+
+                });
+            });
         case eightintent:
             console.log(usuarioID);
             return callApiOcultarHotelServicios(usuarioID).then(data => {
@@ -143,6 +188,7 @@ app.fallback((conv, params) => {
         case sixintent:
             console.log(params);
             var roomNumber = params.number;
+            NumeroHabitacion = params.number;
             return getMirrorID(roomNumber).then(data => {
                 switch (data) {
                     case 1:
@@ -365,6 +411,8 @@ function getMirrorID(roomNumber) {
     });
 }
 
+
+
 function getServiceInfortion(ServideID) {
     return new Promise((resolve, reject) => {
         const options = {
@@ -382,5 +430,62 @@ function getServiceInfortion(ServideID) {
         });
     });
 }
+
+function getMirrorIDReserva(roomNumber) {
+    return new Promise((resolve, reject) => {
+        const options = {
+            url: 'https://tp-ires-api.azurewebsites.net/v1/management/habitacion/' + roomNumber,
+            method: 'GET',
+            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' }
+
+        };
+
+        request(options, function(error, requestInternal, body) {
+
+            let respuesta = JSON.parse(body);
+            resolve(respuesta);
+        });
+    });
+}
+
+function getServiceIDByOrder(usuarioId, orderID) {
+    return new Promise((resolve, reject) => {
+        const options = {
+            url: 'http://smartmirror-api.azurewebsites.net/GetServiceId',
+            method: 'POST',
+            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userID: usuarioId, order: orderID })
+        };
+
+        request(options, function(error, requestInternal, body) {
+            let data = JSON.parse(body);
+            resolve(data);
+            // usuarioID = usuario.id;
+        });
+    });
+}
+
+function ReservarServicio(estanciaid, servicioid, fecha, platoid) {
+    return new Promise((resolve, reject) => {
+        const options = {
+            url: 'https://tp-ires-api.azurewebsites.net/v1/reservas',
+            method: 'POST',
+            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                estanciaId: estanciaid,
+                servicioId: servicioid,
+                fechaReserva: fecha,
+                platoId: platoid
+            })
+        };
+
+        request(options, function(error, requestInternal, body) {
+            let data = JSON.parse(body);
+            resolve(data);
+            // usuarioID = usuario.id;
+        });
+    });
+}
+
 // Set the DialogflowApp object to handle the HTTPS POST request.
 exports.dialogflowFirebaseFulfillment = functions.https.onRequest(app);
