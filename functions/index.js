@@ -16,23 +16,25 @@ const app = dialogflow({ debug: true });
 var usuarioID = "";
 var NumeroHabitacion = undefined;
 
-// function callApiUsuario() {
+function callApiUsuario() {
+    return new Promise((resolve, reject) => {
+        const options = {
+            url: 'http://edumoreno27-001-site2.etempurl.com/GetUser',
+            method: 'POST',
+            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+            body: JSON.stringify({ mirrorId: 1 })
+        };
 
-//     const options = {
-//         url: 'http://smartmirror-api.azurewebsites.net/GetUser',
-//         method: 'POST',
-//         headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
-//         body: JSON.stringify({ roomNumber: 140 })
-//     };
+        request(options, function (error, requestInternal, body) {
+            let usuario = JSON.parse(body);
+            usuarioID = usuario.id;
+            NumeroHabitacion = usuario.roomNumber;
+            resolve(usuario);
+        });
+    });
+}
 
-//     request(options, function(error, requestInternal, body) {
-//         let usuario = JSON.parse(body);
-//         usuarioID = usuario.id;
-//     });
-
-// }
-
-// callApiUsuario();
+callApiUsuario();
 
 const firstintent = 'Diary';
 const secondintent = 'CloseDiary';
@@ -45,6 +47,7 @@ const eightintent = 'CloseServiceHotel';
 const nineintent = 'BookService';
 const tenintent = 'BookServiceYes';
 const elevenintent = 'BookServiceYesCustom';
+const twelveintent = 'Music';
 
 var servicioIDGlobal = undefined;
 var estaciaIDGlobal = undefined;
@@ -53,6 +56,16 @@ var estaciaIDGlobal = undefined;
 app.fallback((conv, params) => {
     const intent = conv.intent;
     switch (intent) {
+        case twelveintent:
+            return callApiUsuario().then(respuesta => {
+                var action = params.action;
+                console.log(params);
+                console.log(action);
+                return UpdateActionMusic(action, usuarioID).then(resultado => {
+                    return conv.ask(`Aea`);
+                })
+            })
+
         case elevenintent:
             var fecha = params.date;
             var hora = params.time;
@@ -79,51 +92,77 @@ app.fallback((conv, params) => {
 
 
         case nineintent:
-            var orden5 = params.number;
-            var orden6 = orden5 - 1;
-            return getServiceIDByOrder(usuarioID, orden6).then(result => {
-                servicioIDGlobal = result.serviceId;
-                return getMirrorIDReserva(NumeroHabitacion).then(data => {
-                    estaciaIDGlobal = data.result.estanciaId;
-                    return getServiceInfortion(servicioIDGlobal).then(objeto => {
-                        return conv.ask(`¿Está seguro de reservar el servicio de ${objeto.result.serviceType.name} ${objeto.result.name}?`);
-                    })
 
-                });
-            });
+            return callApiUsuario().then(respuesta => {
+                var orden5 = params.number;
+                var orden6 = orden5 - 1;
+                if (respuesta.status === false) {
+                    return getServicesHotel().then(data=> {
+                        let arreglo=[];
+                        let objaux=undefined;
+                        arreglo=data.result.list;
+                        for (var i=0;i<arreglo.length;i++){
+                            if(orden6 === i){
+                                objaux=arreglo[i];
+                            }
+                        }
+                        servicioIDGlobal=objaux.serviceId;
+                        return getServiceInfortion(objaux.serviceId).then(objeto => {
+                            return conv.ask(`¿Está seguro de reservar el servicio de ${objeto.result.serviceType.name} ${objeto.result.name}?`);
+                        })
+                    });
+                }
+                else {
+                    return getServiceIDByOrder(usuarioID, orden6).then(result => {
+                        servicioIDGlobal = result.serviceId;
+                        return getMirrorIDReserva(NumeroHabitacion).then(data => {
+                            estaciaIDGlobal = data.result.estanciaId;
+                            return getServiceInfortion(servicioIDGlobal).then(objeto => {
+                                return conv.ask(`¿Está seguro de reservar el servicio de ${objeto.result.serviceType.name} ${objeto.result.name}?`);
+                            })
+
+                        });
+                    });
+                }
+
+
+            })
+
         case eightintent:
             console.log(usuarioID);
-            return callApiOcultarHotelServicios(usuarioID).then(data => {
-                if (usuarioID === '') {
-                    return conv.ask(`Ingrese el número de habitación primero`);
-                } else {
-                    return conv.ask(`Cerrando información de servicio`);
-                }
-            });
-        case seventhintent:
-            console.log(params);
-            var orden3 = params.number;
-            var orden4 = orden3 - 1;
-            console.log(orden4, usuarioID);
-            // usuarioID = usuarioID.replace('\'', '');
-            console.log(orden4, usuarioID);
-            return callUpdateHotelServices(orden4, usuarioID).then(data => {
-                console.log("serviceid", data);
-                return getServiceInfortion(data.serviceId).then(resultado => {
-                    let objeto = resultado;
-                    console.log(objeto);
+            return callApiUsuario().then(respuesta => {
+                return callApiOcultarHotelServicios(usuarioID).then(data => {
                     if (usuarioID === '') {
                         return conv.ask(`Ingrese el número de habitación primero`);
                     } else {
-                        return conv.ask(`${objeto.result.serviceType.name} ${objeto.result.name}. ${objeto.result.description}`);
+                        return conv.ask(`Cerrando información de servicio`);
                     }
                 });
+            });
+        case seventhintent:
 
-
-
-
+            return callApiUsuario().then(respuesta => {
+                console.log(params);
+                var orden3 = params.number;
+                var orden4 = orden3 - 1;
+                console.log(orden4, usuarioID);
+                // usuarioID = usuarioID.replace('\'', '');
+                console.log(orden4, usuarioID);
+                return callUpdateHotelServices(orden4, usuarioID).then(data => {
+                    console.log("serviceid", data);
+                    return getServiceInfortion(data.serviceId).then(resultado => {
+                        let objeto = resultado;
+                        console.log(objeto);
+                        if (usuarioID === '') {
+                            return conv.ask(`Ingrese el número de habitación primero`);
+                        } else {
+                            return conv.ask(`${objeto.result.serviceType.name} ${objeto.result.name}. ${objeto.result.description}`);
+                        }
+                    });
+                });
             });
         case firstintent:
+            callApiUsuario();
             console.log(params);
             var orden = params.number;
             var orden2 = orden - 1;
@@ -139,52 +178,61 @@ app.fallback((conv, params) => {
 
             });
         case secondintent:
-            console.log(usuarioID);
-            return callApiOcultarAgenda(usuarioID).then(data => {
-                if (usuarioID === '') {
-                    return conv.ask(`Ingrese el número de habitación primero`);
-                } else {
-                    return conv.ask(`Cerrando agenda`);
-                }
+            return callApiUsuario().then(respuesta => {
+                console.log(usuarioID);
+                return callApiOcultarAgenda(usuarioID).then(data => {
+                    if (usuarioID === '') {
+                        return conv.ask(`Ingrese el número de habitación primero`);
+                    } else {
+                        return conv.ask(`Cerrando agenda`);
+                    }
+                });
             });
         case thirdintent:
-            console.log(usuarioID);
-            return callApiGetLeerAgenda(usuarioID).then(data => {
-                var description = data.description;
-                var summary = data.summary;
-                var location = data.location;
-                var dateTime = data.dateTime;
-                var respuesta = undefined;
-                console.log()
-                if (usuarioID === '') {
-                    respuesta = conv.ask(`Ingrese el número de habitación primero`);
-                } else if (location !== null && description === null) {
-                    respuesta = conv.ask(`${dateTime} ${summary} en ${location}`);
-                } else if (location === null && description !== null) {
-                    respuesta = conv.ask(`${dateTime} ${summary}. Como detalle adicional, ${description} `);
-                } else if (location !== null && description !== null) {
-                    respuesta = conv.ask(`${dateTime} ${summary} en ${location}. Como detalle adicional, ${description} `);
-                } else if (location === null && description === null) {
-                    respuesta = conv.ask(`${dateTime} ${summary}`);
-                }
-                return respuesta;
-            })
+            return callApiUsuario().then(respuesta => {
+                console.log(usuarioID);
+                return callApiGetLeerAgenda(usuarioID).then(data => {
+                    var description = data.description;
+                    var summary = data.summary;
+                    var location = data.location;
+                    var dateTime = data.dateTime;
+                    var respuesta = undefined;
+                    console.log()
+                    if (usuarioID === '') {
+                        respuesta = conv.ask(`Ingrese el número de habitación primero`);
+                    } else if (location !== null && description === null) {
+                        respuesta = conv.ask(`${dateTime} ${summary} en ${location}`);
+                    } else if (location === null && description !== null) {
+                        respuesta = conv.ask(`${dateTime} ${summary}. Como detalle adicional, ${description} `);
+                    } else if (location !== null && description !== null) {
+                        respuesta = conv.ask(`${dateTime} ${summary} en ${location}. Como detalle adicional, ${description} `);
+                    } else if (location === null && description === null) {
+                        respuesta = conv.ask(`${dateTime} ${summary}`);
+                    }
+                    return respuesta;
+                })
+            });
         case fourthintent:
-            return callApiGetEmailInformation(usuarioID).then(data => {
-                var subject = data.subject;
-                var message = data.message;
-                var send = `Asunto: ${subject}. Mensaje: ${message}`;
-                var respuesta = undefined;
-                console.log()
-                respuesta = conv.ask(send);
-                callApiSetStartEmail(usuarioID, send);
-                return respuesta;
-            })
+            return callApiUsuario().then(respuesta => {
+                return callApiGetEmailInformation(usuarioID).then(data => {
+                    var subject = data.subject;
+                    var message = data.message;
+                    var send = `Asunto: ${subject}. Mensaje: ${message}`;
+                    var respuesta = undefined;
+                    console.log()
+                    respuesta = conv.ask(send);
+                    conv.ask(send)
+                    return callApiSetStartEmail(usuarioID, send);
+                    // return respuesta;
+                })
+            });
         case fiftintent:
-            return callApiSetStartEmail(usuarioID).then(data => {
-                return conv.ask(`Se inicializó el correo`);
+            return callApiUsuario().then(respuesta => {
+                return callApiSetStartEmail(usuarioID).then(data => {
+                    return conv.ask(`Se inicializó el correo`);
 
-            })
+                })
+            });
         case sixintent:
             console.log(params);
             var roomNumber = params.number;
@@ -236,13 +284,13 @@ function callUpdateHotelServices(orden, usuarioid) {
     console.log(data);
     return new Promise((resolve, reject) => {
         const options = {
-            url: 'http://smartmirror-api.azurewebsites.net/UpdateServicesHotels',
+            url: 'http://edumoreno27-001-site2.etempurl.com/UpdateServicesHotels',
             method: 'POST',
             headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
             body: data
         };
 
-        request(options, function(error, requestInternal, body) {
+        request(options, function (error, requestInternal, body) {
             resolve(JSON.parse(body));
         });
     });
@@ -254,13 +302,13 @@ function callUpdateDiaries(orden, usuarioid) {
     console.log(data);
     return new Promise((resolve, reject) => {
         const options = {
-            url: 'http://smartmirror-api.azurewebsites.net/UpdateDiaries',
+            url: 'http://edumoreno27-001-site2.etempurl.com/UpdateDiaries',
             method: 'POST',
             headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
             body: data
         };
 
-        request(options, function(error, requestInternal, body) {
+        request(options, function (error, requestInternal, body) {
             resolve(body);
         });
     });
@@ -271,13 +319,13 @@ function callApiOcultarAgenda(usuarioid) {
     console.log(data);
     return new Promise((resolve, reject) => {
         const options = {
-            url: 'http://smartmirror-api.azurewebsites.net/SetAllDiary',
+            url: 'http://edumoreno27-001-site2.etempurl.com/SetAllDiary',
             method: 'POST',
             headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
             body: data
         };
 
-        request(options, function(error, requestInternal, body) {
+        request(options, function (error, requestInternal, body) {
             resolve(body);
         });
     });
@@ -288,13 +336,13 @@ function callApiOcultarHotelServicios(usuarioid) {
     console.log(data);
     return new Promise((resolve, reject) => {
         const options = {
-            url: 'http://smartmirror-api.azurewebsites.net/SetAllHotelServices',
+            url: 'http://edumoreno27-001-site2.etempurl.com/SetAllHotelServices',
             method: 'POST',
             headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
             body: data
         };
 
-        request(options, function(error, requestInternal, body) {
+        request(options, function (error, requestInternal, body) {
             resolve(body);
         });
     });
@@ -306,13 +354,13 @@ function callApiGetLeerAgenda(usuarioid) {
     console.log(data);
     return new Promise((resolve, reject) => {
         const options = {
-            url: 'http://smartmirror-api.azurewebsites.net/GetDiaryInformations',
+            url: 'http://edumoreno27-001-site2.etempurl.com/GetDiaryInformations',
             method: 'POST',
             headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
             body: data
         };
 
-        request(options, function(error, requestInternal, body) {
+        request(options, function (error, requestInternal, body) {
             resolve(JSON.parse(body));
         });
     });
@@ -323,13 +371,13 @@ function callApiGetEmailInformation(usuarioid) {
     console.log(data);
     return new Promise((resolve, reject) => {
         const options = {
-            url: 'http://smartmirror-api.azurewebsites.net/GetEmailInformations',
+            url: 'http://edumoreno27-001-site2.etempurl.com/GetEmailInformations',
             method: 'POST',
             headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
             body: data
         };
 
-        request(options, function(error, requestInternal, body) {
+        request(options, function (error, requestInternal, body) {
             resolve(JSON.parse(body));
         });
     });
@@ -341,34 +389,34 @@ function callApiSetStartEmail(usuarioid, description) {
     console.log(data);
 
     const options = {
-        url: 'http://smartmirror-api.azurewebsites.net/SetStartEmail',
+        url: 'http://edumoreno27-001-site2.etempurl.com/SetStartEmail',
         method: 'POST',
         headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
         body: data
     };
 
-    request(options, function(error, requestInternal, body) {
+    request(options, function (error, requestInternal, body) {
         resolve(body);
     });
 
 }
 
-function callApiUsuario(mirrorID) {
-    return new Promise((resolve, reject) => {
-        const options = {
-            url: 'http://smartmirror-api.azurewebsites.net/GetUser',
-            method: 'POST',
-            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
-            body: JSON.stringify({ mirrorID: mirrorID })
-        };
+// function callApiUsuario(mirrorID) {
+//     return new Promise((resolve, reject) => {
+//         const options = {
+//             url: 'http://edumoreno27-001-site2.etempurl.com/GetUser',
+//             method: 'POST',
+//             headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+//             body: JSON.stringify({ mirrorID: mirrorID })
+//         };
 
-        request(options, function(error, requestInternal, body) {
-            let usuario = JSON.parse(body);
-            resolve(usuario.id);
-            // usuarioID = usuario.id;
-        });
-    });
-}
+//         request(options, function (error, requestInternal, body) {
+//             let usuario = JSON.parse(body);
+//             resolve(usuario.id);
+//             // usuarioID = usuario.id;
+//         });
+//     });
+// }
 
 function getMirrorID(roomNumber) {
     return new Promise((resolve, reject) => {
@@ -379,7 +427,7 @@ function getMirrorID(roomNumber) {
 
         };
 
-        request(options, function(error, requestInternal, body) {
+        request(options, function (error, requestInternal, body) {
 
 
             let respuesta = JSON.parse(body);
@@ -412,6 +460,23 @@ function getMirrorID(roomNumber) {
 }
 
 
+function getServicesHotel() {
+    return new Promise((resolve, reject) => {
+        const options = {
+            url: 'https://tp-ires-api.azurewebsites.net/v1/services',
+            method: 'GET',
+            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' }
+
+        };
+
+        request(options, function (error, requestInternal, body) {
+
+
+            let respuesta = JSON.parse(body);
+            resolve(respuesta);
+        });
+    });
+}
 
 function getServiceInfortion(ServideID) {
     return new Promise((resolve, reject) => {
@@ -422,7 +487,7 @@ function getServiceInfortion(ServideID) {
 
         };
 
-        request(options, function(error, requestInternal, body) {
+        request(options, function (error, requestInternal, body) {
 
 
             let respuesta = JSON.parse(body);
@@ -440,7 +505,7 @@ function getMirrorIDReserva(roomNumber) {
 
         };
 
-        request(options, function(error, requestInternal, body) {
+        request(options, function (error, requestInternal, body) {
 
             let respuesta = JSON.parse(body);
             resolve(respuesta);
@@ -451,13 +516,13 @@ function getMirrorIDReserva(roomNumber) {
 function getServiceIDByOrder(usuarioId, orderID) {
     return new Promise((resolve, reject) => {
         const options = {
-            url: 'http://smartmirror-api.azurewebsites.net/GetServiceId',
+            url: 'http://edumoreno27-001-site2.etempurl.com/GetServiceId',
             method: 'POST',
             headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
             body: JSON.stringify({ userID: usuarioId, order: orderID })
         };
 
-        request(options, function(error, requestInternal, body) {
+        request(options, function (error, requestInternal, body) {
             let data = JSON.parse(body);
             resolve(data);
             // usuarioID = usuario.id;
@@ -479,7 +544,7 @@ function ReservarServicio(estanciaid, servicioid, fecha, platoid) {
             })
         };
 
-        request(options, function(error, requestInternal, body) {
+        request(options, function (error, requestInternal, body) {
             let data = JSON.parse(body);
             resolve(data);
             // usuarioID = usuario.id;
@@ -487,5 +552,25 @@ function ReservarServicio(estanciaid, servicioid, fecha, platoid) {
     });
 }
 
+function UpdateActionMusic(action, userId) {
+    return new Promise((resolve, reject) => {
+        const options = {
+            url: 'http://edumoreno27-001-site2.etempurl.com/UpdateMusicAction',
+            method: 'POST',
+            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: action,
+                userId: userId
+
+            })
+        };
+
+        request(options, function (error, requestInternal, body) {
+
+            resolve(body);
+            // usuarioID = usuario.id;
+        });
+    });
+}
 // Set the DialogflowApp object to handle the HTTPS POST request.
 exports.dialogflowFirebaseFulfillment = functions.https.onRequest(app);
