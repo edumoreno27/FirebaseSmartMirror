@@ -13,6 +13,7 @@ const host = 'https://smartmirror-api.azurewebsites.net';
 const functions = require('firebase-functions');
 const app = dialogflow({ debug: true });
 
+var espejoID= 1;
 var usuarioID = "";
 var NumeroHabitacion = undefined;
 
@@ -22,7 +23,7 @@ function callApiUsuario() {
             url: 'http://edumoreno27-001-site2.etempurl.com/GetUser',
             method: 'POST',
             headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
-            body: JSON.stringify({ mirrorId: 1 })
+            body: JSON.stringify({ mirrorId: espejoID })
         };
 
         request(options, function (error, requestInternal, body) {
@@ -107,9 +108,15 @@ app.fallback((conv, params) => {
                             }
                         }
                         servicioIDGlobal=objaux.serviceId;
-                        return getServiceInfortion(objaux.serviceId).then(objeto => {
-                            return conv.ask(`¿Está seguro de reservar el servicio de ${objeto.result.serviceType.name} ${objeto.result.name}?`);
+
+                        return getHabitacionHotelByMirrorID(espejoID).then(cuarto=> {
+                            estaciaIDGlobal = cuarto.result.estanciaId;
+                            return getServiceInfortion(objaux.serviceId).then(objeto => {
+                                return conv.ask(`¿Está seguro de reservar el servicio de ${objeto.result.serviceType.name} ${objeto.result.name}?`);
+                            })
                         })
+                       
+
                     });
                 }
                 else {
@@ -297,6 +304,7 @@ function callUpdateHotelServices(orden, usuarioid) {
 }
 
 
+
 function callUpdateDiaries(orden, usuarioid) {
     let data = JSON.stringify({ 'order': orden, 'userId': usuarioid });
     console.log(data);
@@ -464,6 +472,24 @@ function getServicesHotel() {
     return new Promise((resolve, reject) => {
         const options = {
             url: 'https://tp-ires-api.azurewebsites.net/v1/services',
+            method: 'GET',
+            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' }
+
+        };
+
+        request(options, function (error, requestInternal, body) {
+
+
+            let respuesta = JSON.parse(body);
+            resolve(respuesta);
+        });
+    });
+}
+
+function getHabitacionHotelByMirrorID(MirrorID) {
+    return new Promise((resolve, reject) => {
+        const options = {
+            url: 'https://tp-ires-api.azurewebsites.net/v1/management/mirror/'+MirrorID,
             method: 'GET',
             headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' }
 
