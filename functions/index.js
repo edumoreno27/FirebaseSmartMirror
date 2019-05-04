@@ -81,11 +81,11 @@ app.fallback((conv, params) => {
                                 return respuesta;
                         }
                         return;
-                        
+
                     })
                 }
-                else{
-                    return UpdateActionMusic(action, espejoID,usuarioID).then(resultado => {
+                else {
+                    return UpdateActionMusic(action, espejoID, usuarioID).then(resultado => {
                         let respuesta = undefined;
                         switch (action.toLocaleLowerCase()) {
                             case 'pausar':
@@ -102,7 +102,7 @@ app.fallback((conv, params) => {
                                 return respuesta;
                         }
                         return;
-                        
+
                     })
                 }
             })
@@ -148,9 +148,10 @@ app.fallback((conv, params) => {
                             }
                         }
                         servicioIDGlobal = objaux.serviceId;
-
+                        console.log("SERVICIOIDGLOBAL", servicioIDGlobal);
                         return getHabitacionHotelByMirrorID(espejoID).then(cuarto => {
                             estaciaIDGlobal = cuarto.result.estanciaId;
+                            console.log("ESTANCIAID", estaciaIDGlobal);
                             return getServiceInfortion(objaux.serviceId).then(objeto => {
                                 return conv.ask(`¿Está seguro de reservar el servicio de ${objeto.result.serviceType.name} ${objeto.result.name}?`);
                             })
@@ -178,13 +179,24 @@ app.fallback((conv, params) => {
         case eightintent:
             console.log(usuarioID);
             return callApiUsuario().then(respuesta => {
-                return callApiOcultarHotelServicios(usuarioID).then(data => {
-                    if (usuarioID === '') {
-                        return conv.ask(`Ingrese el número de habitación primero`);
-                    } else {
-                        return conv.ask(`Cerrando información de servicio`);
-                    }
-                });
+                if (respuesta.status === false) {
+                    return callApiOcultarHotelServiciosNoUser(espejoID).then(data => {
+                        if (usuarioID === '') {
+                            return conv.ask(`Ingrese el número de habitación primero`);
+                        } else {
+                            return conv.ask(`Cerrando información de servicio`);
+                        }
+                    });
+                } else{
+                    return callApiOcultarHotelServicios(usuarioID).then(data => {
+                        if (usuarioID === '') {
+                            return conv.ask(`Ingrese el número de habitación primero`);
+                        } else {
+                            return conv.ask(`Cerrando información de servicio`);
+                        }
+                    });
+                }
+           
             });
         case seventhintent:
 
@@ -195,18 +207,33 @@ app.fallback((conv, params) => {
                 console.log(orden4, usuarioID);
                 // usuarioID = usuarioID.replace('\'', '');
                 console.log(orden4, usuarioID);
-                return callUpdateHotelServices(orden4, usuarioID).then(data => {
-                    console.log("serviceid", data);
-                    return getServiceInfortion(data.serviceId).then(resultado => {
-                        let objeto = resultado;
-                        console.log(objeto);
-                        if (usuarioID === '') {
-                            return conv.ask(`Ingrese el número de habitación primero`);
-                        } else {
+                if (respuesta.status === false) {
+                    console.log("UPDATE HOTEL SERVICE NO USER",orden4,espejoID);
+                    return callUpdateHotelServicesNoUser(orden4, espejoID).then(data => {
+                        console.log("serviceid", data);
+                        return getServiceInfortion(data.serviceId).then(resultado => {
+                            let objeto = resultado;
+                            console.log(objeto);
+
                             return conv.ask(`${objeto.result.serviceType.name} ${objeto.result.name}. ${objeto.result.description}`);
-                        }
+
+                        });
                     });
-                });
+                } else {
+                    return callUpdateHotelServices(orden4, usuarioID).then(data => {
+                        console.log("serviceid", data);
+                        return getServiceInfortion(data.serviceId).then(resultado => {
+                            let objeto = resultado;
+                            console.log(objeto);
+
+                            return conv.ask(`${objeto.result.serviceType.name} ${objeto.result.name}. ${objeto.result.description}`);
+
+                        });
+                    });
+                }
+
+
+
             });
         case firstintent:
             callApiUsuario();
@@ -273,8 +300,8 @@ app.fallback((conv, params) => {
                     // }).catch(error=> {
 
                     // })
-                    callApiSetStartEmail(usuarioID, send); 
-                    return  conv.ask(send)
+                    callApiSetStartEmail(usuarioID, send);
+                    return conv.ask(send)
                     // return respuesta;
                 })
             });
@@ -348,6 +375,22 @@ function callUpdateHotelServices(orden, usuarioid) {
     });
 }
 
+function callUpdateHotelServicesNoUser(orden, usuarioid) {
+    let data = JSON.stringify({ 'order': orden, 'mirrorId': usuarioid });
+    console.log(data);
+    return new Promise((resolve, reject) => {
+        const options = {
+            url: 'http://edumoreno27-001-site2.etempurl.com/UpdateServicesHotelsNoUser',
+            method: 'POST',
+            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+            body: data
+        };
+
+        request(options, function (error, requestInternal, body) {
+            resolve(JSON.parse(body));
+        });
+    });
+}
 
 
 function callUpdateDiaries(orden, usuarioid) {
@@ -385,7 +428,8 @@ function callApiOcultarAgenda(usuarioid) {
 }
 
 function callApiOcultarHotelServicios(usuarioid) {
-    let data = JSON.stringify({ userId: usuarioid });
+    let data = JSON.stringify({ userId: usuarioid});
+    
     console.log(data);
     return new Promise((resolve, reject) => {
         const options = {
@@ -401,6 +445,23 @@ function callApiOcultarHotelServicios(usuarioid) {
     });
 }
 
+function callApiOcultarHotelServiciosNoUser(espejito) {
+    let data = JSON.stringify({ 'mirrorId':espejito });
+    
+    console.log("DATA NO USER",data);
+    return new Promise((resolve, reject) => {
+        const options = {
+            url: 'http://edumoreno27-001-site2.etempurl.com/SetAllHotelServicesNoUser',
+            method: 'POST',
+            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+            body: data
+        };
+
+        request(options, function (error, requestInternal, body) {
+            resolve(body);
+        });
+    });
+}
 
 function callApiGetLeerAgenda(usuarioid) {
     let data = JSON.stringify({ userId: usuarioid });
@@ -623,7 +684,7 @@ function ReservarServicio(estanciaid, servicioid, fecha, platoid) {
     });
 }
 
-function UpdateActionMusic(action, userId,userIDd) {
+function UpdateActionMusic(action, userId, userIDd) {
     return new Promise((resolve, reject) => {
         const options = {
             url: 'http://edumoreno27-001-site2.etempurl.com/UpdateMusicAction',
@@ -632,7 +693,7 @@ function UpdateActionMusic(action, userId,userIDd) {
             body: JSON.stringify({
                 action: action,
                 mirrorId: userId,
-                userId:userIDd
+                userId: userIDd
 
             })
         };
