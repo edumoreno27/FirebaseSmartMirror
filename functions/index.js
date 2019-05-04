@@ -13,7 +13,7 @@ const host = 'https://smartmirror-api.azurewebsites.net';
 const functions = require('firebase-functions');
 const app = dialogflow({ debug: true });
 
-var espejoID= 1;
+var espejoID = 1;
 var usuarioID = "";
 var NumeroHabitacion = undefined;
 
@@ -63,7 +63,23 @@ app.fallback((conv, params) => {
                 console.log(params);
                 console.log(action);
                 return UpdateActionMusic(action, usuarioID).then(resultado => {
-                    return conv.ask(`Aea`);
+                    let respuesta = undefined;
+                    switch (action.toLocaleLowerCase()) {
+                        case 'pausar':
+                            respuesta = conv.ask(`Pausando música`);
+                            return respuesta;
+                        case 'reproducir':
+                            respuesta = conv.ask(`Reproduciendo música`);
+                            return respuesta;
+                        case 'adelantar':
+                            respuesta = conv.ask(`Música siguiente`);
+                            return respuesta;
+                        case 'retroceder':
+                            respuesta = conv.ask(`Música previa`);
+                            return respuesta;
+                    }
+                    return;
+                    
                 })
             })
 
@@ -98,24 +114,24 @@ app.fallback((conv, params) => {
                 var orden5 = params.number;
                 var orden6 = orden5 - 1;
                 if (respuesta.status === false) {
-                    return getServicesHotel().then(data=> {
-                        let arreglo=[];
-                        let objaux=undefined;
-                        arreglo=data.result.list;
-                        for (var i=0;i<arreglo.length;i++){
-                            if(orden6 === i){
-                                objaux=arreglo[i];
+                    return getServicesHotel().then(data => {
+                        let arreglo = [];
+                        let objaux = undefined;
+                        arreglo = data.result.list;
+                        for (var i = 0; i < arreglo.length; i++) {
+                            if (orden6 === i) {
+                                objaux = arreglo[i];
                             }
                         }
-                        servicioIDGlobal=objaux.serviceId;
+                        servicioIDGlobal = objaux.serviceId;
 
-                        return getHabitacionHotelByMirrorID(espejoID).then(cuarto=> {
+                        return getHabitacionHotelByMirrorID(espejoID).then(cuarto => {
                             estaciaIDGlobal = cuarto.result.estanciaId;
                             return getServiceInfortion(objaux.serviceId).then(objeto => {
                                 return conv.ask(`¿Está seguro de reservar el servicio de ${objeto.result.serviceType.name} ${objeto.result.name}?`);
                             })
                         })
-                       
+
 
                     });
                 }
@@ -227,9 +243,14 @@ app.fallback((conv, params) => {
                     var send = `Asunto: ${subject}. Mensaje: ${message}`;
                     var respuesta = undefined;
                     console.log()
-                    respuesta = conv.ask(send);
-                    conv.ask(send)
-                    return callApiSetStartEmail(usuarioID, send);
+                    // respuesta = conv.ask(send);
+                    // return  conv.ask(send).then(data=> {
+                    //     return callApiSetStartEmail(usuarioID, send);    
+                    // }).catch(error=> {
+
+                    // })
+                    callApiSetStartEmail(usuarioID, send); 
+                    return  conv.ask(send)
                     // return respuesta;
                 })
             });
@@ -489,7 +510,7 @@ function getServicesHotel() {
 function getHabitacionHotelByMirrorID(MirrorID) {
     return new Promise((resolve, reject) => {
         const options = {
-            url: 'https://tp-ires-api.azurewebsites.net/v1/management/mirror/'+MirrorID,
+            url: 'https://tp-ires-api.azurewebsites.net/v1/management/mirror/' + MirrorID,
             method: 'GET',
             headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' }
 
