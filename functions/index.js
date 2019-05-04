@@ -62,25 +62,49 @@ app.fallback((conv, params) => {
                 var action = params.action;
                 console.log(params);
                 console.log(action);
-                return UpdateActionMusic(action, usuarioID).then(resultado => {
-                    let respuesta = undefined;
-                    switch (action.toLocaleLowerCase()) {
-                        case 'pausar':
-                            respuesta = conv.ask(`Pausando música`);
-                            return respuesta;
-                        case 'reproducir':
-                            respuesta = conv.ask(`Reproduciendo música`);
-                            return respuesta;
-                        case 'adelantar':
-                            respuesta = conv.ask(`Música siguiente`);
-                            return respuesta;
-                        case 'retroceder':
-                            respuesta = conv.ask(`Música previa`);
-                            return respuesta;
-                    }
-                    return;
-                    
-                })
+                if (respuesta.status === false) {
+
+                    return UpdateActionMusicNoUser(action, espejoID).then(resultado => {
+                        let respuesta = undefined;
+                        switch (action.toLocaleLowerCase()) {
+                            case 'pausar':
+                                respuesta = conv.ask(`Pausando música`);
+                                return respuesta;
+                            case 'reproducir':
+                                respuesta = conv.ask(`Reproduciendo música`);
+                                return respuesta;
+                            case 'adelantar':
+                                respuesta = conv.ask(`Música siguiente`);
+                                return respuesta;
+                            case 'retroceder':
+                                respuesta = conv.ask(`Música previa`);
+                                return respuesta;
+                        }
+                        return;
+                        
+                    })
+                }
+                else{
+                    return UpdateActionMusic(action, espejoID,usuarioID).then(resultado => {
+                        let respuesta = undefined;
+                        switch (action.toLocaleLowerCase()) {
+                            case 'pausar':
+                                respuesta = conv.ask(`Pausando música`);
+                                return respuesta;
+                            case 'reproducir':
+                                respuesta = conv.ask(`Reproduciendo música`);
+                                return respuesta;
+                            case 'adelantar':
+                                respuesta = conv.ask(`Música siguiente`);
+                                return respuesta;
+                            case 'retroceder':
+                                respuesta = conv.ask(`Música previa`);
+                                return respuesta;
+                        }
+                        return;
+                        
+                    })
+                }
             })
 
         case elevenintent:
@@ -599,7 +623,7 @@ function ReservarServicio(estanciaid, servicioid, fecha, platoid) {
     });
 }
 
-function UpdateActionMusic(action, userId) {
+function UpdateActionMusic(action, userId,userIDd) {
     return new Promise((resolve, reject) => {
         const options = {
             url: 'http://edumoreno27-001-site2.etempurl.com/UpdateMusicAction',
@@ -607,7 +631,28 @@ function UpdateActionMusic(action, userId) {
             headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 action: action,
-                userId: userId
+                mirrorId: userId,
+                userId:userIDd
+
+            })
+        };
+
+        request(options, function (error, requestInternal, body) {
+
+            resolve(body);
+            // usuarioID = usuario.id;
+        });
+    });
+}
+function UpdateActionMusicNoUser(action, userId) {
+    return new Promise((resolve, reject) => {
+        const options = {
+            url: 'http://edumoreno27-001-site2.etempurl.com/UpdateMusicActionWithoutUser',
+            method: 'POST',
+            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: action,
+                mirrorId: userId
 
             })
         };
