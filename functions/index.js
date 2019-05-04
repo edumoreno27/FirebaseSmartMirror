@@ -240,26 +240,26 @@ app.fallback((conv, params) => {
 
                 })
             });
-        case sixintent:
-            console.log(params);
-            var roomNumber = params.number;
-            NumeroHabitacion = params.number;
-            return getMirrorID(roomNumber).then(data => {
-                switch (data) {
-                    case 1:
-                        console.log(usuarioID);
-                        return conv.ask(`La habitación ${roomNumber} fue asociada correctamente a tu cuenta google`);
-                    case 2:
-                        return conv.ask(`Esta habitación no cuenta con un Smart Mirror`);
-                    case 3:
-                        return conv.ask(`Esta habitación no se encuentra disponible`);
-                    case 4:
-                        return conv.ask(`Este número de habitación no existe`);
-                    default:
-                        return conv.ask('');
-                }
+        // case sixintent:
+        //     console.log(params);
+        //     var roomNumber = params.number;
+        //     NumeroHabitacion = params.number;
+        //     return getMirrorID(roomNumber).then(data => {
+        //         switch (data) {
+        //             case 1:
+        //                 console.log(usuarioID);
+        //                 return conv.ask(`La habitación ${roomNumber} fue asociada correctamente a tu cuenta google`);
+        //             case 2:
+        //                 return conv.ask(`Esta habitación no cuenta con un Smart Mirror`);
+        //             case 3:
+        //                 return conv.ask(`Esta habitación no se encuentra disponible`);
+        //             case 4:
+        //                 return conv.ask(`Este número de habitación no existe`);
+        //             default:
+        //                 return conv.ask('');
+        //         }
 
-            });
+        //     });
         default:
             return conv.ask(`No entendí lo que me dijo, repita porfavor`);
 
