@@ -67,41 +67,74 @@ app.fallback((conv, params) => {
 
                     return UpdateActionMusicNoUser(action, espejoID).then(resultado => {
                         let respuesta = undefined;
-                        switch (action.toLocaleLowerCase()) {
-                            case 'pausar':
-                                respuesta = conv.ask(`Pausando música`);
-                                return respuesta;
-                            case 'reproducir':
-                                respuesta = conv.ask(`Reproduciendo música`);
-                                return respuesta;
-                            case 'adelantar':
-                                respuesta = conv.ask(`Música siguiente`);
-                                return respuesta;
-                            case 'retroceder':
-                                respuesta = conv.ask(`Música previa`);
-                                return respuesta;
+                        // switch (action.toLocaleLowerCase()) {
+                        //     case 'pausar':
+                        //         respuesta = conv.ask(`Pausando música`);
+                        //         return respuesta;
+                        //     case 'reproducir':
+                        //         respuesta = conv.ask(`Reproduciendo música`);
+                        //         return respuesta;
+                        //     case 'adelantar':
+                        //         respuesta = conv.ask(`Música siguiente`);
+                        //         return respuesta;
+                        //     case 'retroceder':
+                        //         respuesta = conv.ask(`Música previa`);
+                        //         return respuesta;
+                        //     default:
+                        //         respuesta = conv.ask(`Ingrese un comando permitido`);
+                        //         return respuesta;
+
+                        // }
+                        if(action.toLocaleLowerCase() === 'pausar'){
+                            respuesta = conv.ask(`Pausando música`);
+                            
+                        }else if(action.toLocaleLowerCase() === 'reproducir'){
+                            respuesta = conv.ask(`Reproduciendo música`);
+                            
+                        }else if(action.toLocaleLowerCase() === 'adelantar'){
+                            respuesta = conv.ask(`Música siguiente`);
+                        }else if(action.toLocaleLowerCase() === 'retroceder'){
+                            respuesta = conv.ask(`Música previa`);
+                        }else{
+                            respuesta = conv.ask(`No entendí lo que me dijo, repita porfavor`);
                         }
-                        return;
+                        return respuesta;
 
                     })
                 } else {
                     return UpdateActionMusic(action, espejoID, usuarioID).then(resultado => {
                         let respuesta = undefined;
-                        switch (action.toLocaleLowerCase()) {
-                            case 'pausar':
-                                respuesta = conv.ask(`Pausando música`);
-                                return respuesta;
-                            case 'reproducir':
-                                respuesta = conv.ask(`Reproduciendo música`);
-                                return respuesta;
-                            case 'adelantar':
-                                respuesta = conv.ask(`Música siguiente`);
-                                return respuesta;
-                            case 'retroceder':
-                                respuesta = conv.ask(`Música previa`);
-                                return respuesta;
+                        // switch (action.toLocaleLowerCase()) {
+                        //     case 'pausar':
+                        //         respuesta = conv.ask(`Pausando música`);
+                        //         return respuesta;
+                        //     case 'reproducir':
+                        //         respuesta = conv.ask(`Reproduciendo música`);
+                        //         return respuesta;
+                        //     case 'adelantar':
+                        //         respuesta = conv.ask(`Música siguiente`);
+                        //         return respuesta;
+                        //     case 'retroceder':
+                        //         respuesta = conv.ask(`Música previa`);
+                        //         return respuesta;
+                        //     default:
+                        //         respuesta = conv.ask(`Ingrese un comando permitido`);
+                        //         return respuesta;
+                        // }
+                        if(action.toLocaleLowerCase() === 'pausar'){
+                            respuesta = conv.ask(`Pausando música`);
+                            
+                        }else if(action.toLocaleLowerCase() === 'reproducir'){
+                            respuesta = conv.ask(`Reproduciendo música`);
+                            
+                        }else if(action.toLocaleLowerCase() === 'adelantar'){
+                            respuesta = conv.ask(`Música siguiente`);
+                        }else if(action.toLocaleLowerCase() === 'retroceder'){
+                            respuesta = conv.ask(`Música previa`);
+                        }else{
+                            respuesta = conv.ask(`No entendí lo que me dijo, repita porfavor`);
                         }
-                        return;
+                        return respuesta;
 
                     })
                 }
