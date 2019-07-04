@@ -1,11 +1,9 @@
 'use strict';
 
-// Import the Dialogflow module from the Actions on Google client library.
 const {
     dialogflow,
     Suggestions
-    /*,
-      Permission*/
+    
 } = require('actions-on-google');
 const http = require('http');
 const request = require('request');
@@ -13,150 +11,132 @@ const host = 'https://smartmirror-api.azurewebsites.net';
 const functions = require('firebase-functions');
 const app = dialogflow({ debug: true });
 
-var espejoID = 1;
-var usuarioID = "";
-var NumeroHabitacion = undefined;
+const EmailWidgetID = '26FE2DC3-ECA3-4199-95EB-08AF8089C40E';
+const WeatherWidgetID = '99F9DFB0-69B3-4E32-8456-56AA76BADC2C';
+const NewsWidgetID = 'D46FD00C-746D-4A11-A90A-5928EEC511CA';
+const HotelServicesWidgetID = 'E7A12A8D-6514-43EB-9C6C-71A0180D0B81';
+const MusicWidgetID = '11E19DA1-546C-45FB-8B9E-B2BD6E91FC73';
+const DiaryWidgetID = '5A3179B9-A0D6-4110-907B-C9217911EA42';
 
-function callApiUsuario() {
+
+var mirrorID = 1;
+var userID = "";
+var roomNumber = undefined;
+
+function callApiUser() {
     return new Promise((resolve, reject) => {
         const options = {
             url: 'http://edumoreno27-001-site2.etempurl.com/GetUser',
             method: 'POST',
             headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
-            body: JSON.stringify({ mirrorId: espejoID })
+            body: JSON.stringify({ mirrorId: mirrorID })
         };
 
-        request(options, function(error, requestInternal, body) {
-            let usuario = JSON.parse(body);
-            usuarioID = usuario.id;
-            NumeroHabitacion = usuario.roomNumber;
-            resolve(usuario);
+        request(options, function (error, requestInternal, body) {
+            let user = JSON.parse(body);
+            userID = user.id;
+            roomNumber = user.roomNumber;
+            resolve(user);
         });
     });
 }
 
-callApiUsuario();
+callApiUser();
 
-const firstintent = 'Diary';
-const secondintent = 'CloseDiary';
-const thirdintent = 'ReadAgenda';
-const fourthintent = 'ReadEmail';
-const intentreademail = 'ReadNews';
-const fiftintent = 'StartEmail';
-const sixintent = 'RoomNumber';
-const seventhintent = 'UpdateServicesHotels';
-const eightintent = 'CloseServiceHotel';
-const nineintent = 'BookService';
-const tenintent = 'BookServiceYes';
-const elevenintent = 'BookServiceYesCustom';
-const twelveintent = 'Music';
+const showDiary = 'Diary';    
+const closeDiary = 'CloseDiary'; 
+const readDiary = 'ReadAgenda';
+const readEmail = 'ReadEmail';
+const readNews = 'ReadNews';
+const startEmail = 'StartEmail'; 
+const updateServicesHotel = 'UpdateServicesHotels';
+const closeServicesHotel = 'CloseServiceHotel';
+const bookService = 'BookService';
+const bookServiceYes = 'BookServiceYes'; 
+const bookServiceYesCustom = 'BookServiceYesCustom';
+const musicWidget = 'Music';
 
-var servicioIDGlobal = undefined;
-var estaciaIDGlobal = undefined;
+var serviceIDGlobal = undefined;
+var stayIDGlobal = undefined;
 
 
 app.fallback((conv, params) => {
     const intent = conv.intent;
     switch (intent) {
-        case twelveintent:
-            return callApiUsuario().then(respuesta => {
-                var action = params.action;
-                console.log(params);
-                console.log(action);
-                if (respuesta.status === false) {
+        case musicWidget:
+            return callApiUser().then(result => {
+                var action = params.action;                
+                if (result.status === false) {
 
-                    return UpdateActionMusicNoUser(action, espejoID).then(resultado => {
-                        let respuesta = undefined;
-                        // switch (action.toLocaleLowerCase()) {
-                        //     case 'pausar':
-                        //         respuesta = conv.ask(`Pausando música`);
-                        //         return respuesta;
-                        //     case 'reproducir':
-                        //         respuesta = conv.ask(`Reproduciendo música`);
-                        //         return respuesta;
-                        //     case 'adelantar':
-                        //         respuesta = conv.ask(`Música siguiente`);
-                        //         return respuesta;
-                        //     case 'retroceder':
-                        //         respuesta = conv.ask(`Música previa`);
-                        //         return respuesta;
-                        //     default:
-                        //         respuesta = conv.ask(`Ingrese un comando permitido`);
-                        //         return respuesta;
+                    return UpdateActionMusicNoUser(action, mirrorID).then(result => {
+                        let response = undefined;
+                        if (action.toLocaleLowerCase() === 'pausar') {
+                            response = conv.ask(`Pausando música`);
 
-                        // }
-                        if(action.toLocaleLowerCase() === 'pausar'){
-                            respuesta = conv.ask(`Pausando música`);
-                            
-                        }else if(action.toLocaleLowerCase() === 'reproducir'){
-                            respuesta = conv.ask(`Reproduciendo música`);
-                            
-                        }else if(action.toLocaleLowerCase() === 'adelantar'){
-                            respuesta = conv.ask(`Música siguiente`);
-                        }else if(action.toLocaleLowerCase() === 'retroceder'){
-                            respuesta = conv.ask(`Música previa`);
-                        }else{
-                            respuesta = conv.ask(`No entendí lo que me dijo, repita porfavor`);
+                        } else if (action.toLocaleLowerCase() === 'reproducir') {
+                            response = conv.ask(`Reproduciendo música`);
+
+                        } else if (action.toLocaleLowerCase() === 'adelantar') {
+                            response = conv.ask(`Música siguiente`);
+                        } else if (action.toLocaleLowerCase() === 'retroceder') {
+                            response = conv.ask(`Música previa`);
+                        } else {
+                            response = conv.ask(`No entendí lo que me dijo, repita porfavor`);
                         }
-                        return respuesta;
+                        return response;
 
                     })
                 } else {
-                    return UpdateActionMusic(action, espejoID, usuarioID).then(resultado => {
-                        let respuesta = undefined;
-                        // switch (action.toLocaleLowerCase()) {
-                        //     case 'pausar':
-                        //         respuesta = conv.ask(`Pausando música`);
-                        //         return respuesta;
-                        //     case 'reproducir':
-                        //         respuesta = conv.ask(`Reproduciendo música`);
-                        //         return respuesta;
-                        //     case 'adelantar':
-                        //         respuesta = conv.ask(`Música siguiente`);
-                        //         return respuesta;
-                        //     case 'retroceder':
-                        //         respuesta = conv.ask(`Música previa`);
-                        //         return respuesta;
-                        //     default:
-                        //         respuesta = conv.ask(`Ingrese un comando permitido`);
-                        //         return respuesta;
-                        // }
-                        if(action.toLocaleLowerCase() === 'pausar'){
-                            respuesta = conv.ask(`Pausando música`);
-                            
-                        }else if(action.toLocaleLowerCase() === 'reproducir'){
-                            respuesta = conv.ask(`Reproduciendo música`);
-                            
-                        }else if(action.toLocaleLowerCase() === 'adelantar'){
-                            respuesta = conv.ask(`Música siguiente`);
-                        }else if(action.toLocaleLowerCase() === 'retroceder'){
-                            respuesta = conv.ask(`Música previa`);
-                        }else{
-                            respuesta = conv.ask(`No entendí lo que me dijo, repita porfavor`);
+                    return GetStateWidget(MusicWidgetID, userID).then(data => {
+
+                        if (data.status) {
+                            return UpdateActionMusic(action, mirrorID, userID).then(result => {
+                                let response = undefined;
+                                if (action.toLocaleLowerCase() === 'pausar') {
+                                    response = conv.ask(`Pausando música`);
+
+                                } else if (action.toLocaleLowerCase() === 'reproducir') {
+                                    response = conv.ask(`Reproduciendo música`);
+
+                                } else if (action.toLocaleLowerCase() === 'adelantar') {
+                                    response = conv.ask(`Música siguiente`);
+                                } else if (action.toLocaleLowerCase() === 'retroceder') {
+                                    response = conv.ask(`Música previa`);
+                                } else {
+                                    response = conv.ask(`No entendí lo que me dijo, repita porfavor`);
+                                }
+                                return response;
+
+                            })
+                        } else {
+                            response = conv.ask(`El widget de música se encuentra deshabilitado`);
+                            return response;
                         }
-                        return respuesta;
+                    });
 
-                    })
+
                 }
             })
 
-        case elevenintent:
-            var fecha = params.date;
-            var hora = params.time;
-            fecha = fecha.substring(0, 11);
-            hora = hora.substring(11, 19);
-            var fechafirme = fecha + hora;
-            return ReservarServicio(estaciaIDGlobal, servicioIDGlobal, fechafirme, 0).then(resultado => {
-                let respuesta = undefined;
-                if (resultado.status === 'Created') {
-                    respuesta = conv.ask(`La reserva fue realizada exitosamente`);
+        case bookServiceYesCustom:
+            var date = params.date;
+            var hour = params.time;
+            date = date.substring(0, 11);
+            hour = hour.substring(11, 19);
+            var realdate = date + hour;
+            return BookService(stayIDGlobal, serviceIDGlobal, realdate, 0).then(result => {
+                let response = undefined;
+                if (result.status === 'Created') {
+                    response = conv.ask(`La reserva fue realizada exitosamente`);
+                } else{
+                    response = conv.ask(`Hubo un problema al realizar la reserva`);
                 }
-                return respuesta;
+                return response;
             })
 
-        case tenintent:
-            return getServiceInfortion(servicioIDGlobal).then(objeto => {
-                let serviceTypeID = objeto.result.serviceType.serviceTypeId;
+        case bookServiceYes:
+            return getServiceInformation(serviceIDGlobal).then(object => {
+                let serviceTypeID = object.result.serviceType.serviceTypeId;
                 if (serviceTypeID === 3) {
                     return conv.ask(`Consultando los platos`);
                 } else {
@@ -165,255 +145,285 @@ app.fallback((conv, params) => {
             });
 
 
-        case nineintent:
+        case bookService:
 
-            return callApiUsuario().then(respuesta => {
-                var orden5 = params.number;
-                var orden6 = orden5 - 1;
-                if (respuesta.status === false) {
+            return callApiUser().then(response => {
+                var order1 = params.number;
+                var order2 = order1 - 1;
+                if (response.status === false) {
+
+                    callApiHideHotelServicesNoUser(mirrorID);
                     return getServicesHotel().then(data => {
-                        let arreglo = [];
+                        let array = [];
                         let objaux = undefined;
-                        arreglo = data.result.list;
-                        for (var i = 0; i < arreglo.length; i++) {
-                            if (orden6 === i) {
-                                objaux = arreglo[i];
+                        array = data.result.list;
+                        for (var i = 0; i < array.length; i++) {
+                            if (order2 === i) {
+                                objaux = array[i];
                             }
                         }
-                        servicioIDGlobal = objaux.serviceId;
-                        console.log("SERVICIOIDGLOBAL", servicioIDGlobal);
-                        return getHabitacionHotelByMirrorID(espejoID).then(cuarto => {
-                            estaciaIDGlobal = cuarto.result.estanciaId;
-                            console.log("ESTANCIAID", estaciaIDGlobal);
-                            return getServiceInfortion(objaux.serviceId).then(objeto => {
-                                return conv.ask(`¿Está seguro de reservar el servicio de ${objeto.result.serviceType.name} ${objeto.result.name}?`);
+                        serviceIDGlobal = objaux.serviceId;                        
+                        return getHotelRoomByMirrorID(mirrorID).then(room => {
+                            stayIDGlobal = room.result.estanciaId;                            
+                            return getServiceInformation(objaux.serviceId).then(object => {
+                                return conv.ask(`¿Está seguro de reservar el servicio de ${object.result.serviceType.name} ${object.result.name}?`);
                             })
                         })
 
 
                     });
                 } else {
-                    return getServiceIDByOrder(usuarioID, orden6).then(result => {
-                        servicioIDGlobal = result.serviceId;
-                        return getMirrorIDReserva(NumeroHabitacion).then(data => {
-                            estaciaIDGlobal = data.result.estanciaId;
-                            return getServiceInfortion(servicioIDGlobal).then(objeto => {
-                                return conv.ask(`¿Está seguro de reservar el servicio de ${objeto.result.serviceType.name} ${objeto.result.name}?`);
-                            })
+                    return GetStateWidget(HotelServicesWidgetID, userID).then(data => {
+                        if (data.status) {
+                            callApiHideDiary(userID);
+                            callApiHideHotelServices(userID);
+                            return getServiceIDByOrder(userID, order2).then(result => {
+                                serviceIDGlobal = result.serviceId;
+                                return getMirrorIDReservation(roomNumber).then(data => {
+                                    stayIDGlobal = data.result.estanciaId;
+                                    return getServiceInformation(serviceIDGlobal).then(object => {
+                                        return conv.ask(`¿Está seguro de reservar el servicio de ${object.result.serviceType.name} ${object.result.name}?`);
+                                    })
 
-                        });
+                                });
+                            });
+                        } else {
+                            return conv.ask(`El widget de servicios del hotel se encuentra deshabilitado`);
+                        }
                     });
+
+
                 }
 
 
             })
 
-        case eightintent:
-            console.log(usuarioID);
-            return callApiUsuario().then(respuesta => {
-                if (respuesta.status === false) {
-                    return callApiOcultarHotelServiciosNoUser(espejoID).then(data => {
-                        if (usuarioID === '') {
+        case closeServicesHotel:            
+            return callApiUser().then(response => {
+                if (response.status === false) {
+                    return callApiHideHotelServicesNoUser(mirrorID).then(data => {
+                        if (userID === '') {
                             return conv.ask(`Ingrese el número de habitación primero`);
                         } else {
                             return conv.ask(`Cerrando información de servicio`);
                         }
                     });
                 } else {
-                    return callApiOcultarHotelServicios(usuarioID).then(data => {
-                        if (usuarioID === '') {
-                            return conv.ask(`Ingrese el número de habitación primero`);
+                    return GetStateWidget(HotelServicesWidgetID, userID).then(data => {
+                        if (data.status) {
+                            return callApiHideHotelServices(userID).then(data => {
+                                if (userID === '') {
+                                    return conv.ask(`Ingrese el número de habitación primero`);
+                                } else {
+                                    return conv.ask(`Cerrando información de servicio`);
+                                }
+                            });
                         } else {
-                            return conv.ask(`Cerrando información de servicio`);
+                            return conv.ask(`El widget de servicios del hotel se encuentra deshabilitado`);
                         }
-                    });
+                    })
+
+
                 }
 
             });
-        case seventhintent:
+        case updateServicesHotel:
 
-            return callApiUsuario().then(respuesta => {
-                console.log(params);
-                var orden3 = params.number;
-                var orden4 = orden3 - 1;
-                console.log(orden4, usuarioID);
-                // usuarioID = usuarioID.replace('\'', '');
-                console.log(orden4, usuarioID);
-                if (respuesta.status === false) {
-                    console.log("UPDATE HOTEL SERVICE NO USER", orden4, espejoID);
-                    return callUpdateHotelServicesNoUser(orden4, espejoID).then(data => {
-                        console.log("serviceid", data);
-                        return getServiceInfortion(data.serviceId).then(resultado => {
-                            let objeto = resultado;
-                            console.log(objeto);
-
-                            return conv.ask(`${objeto.result.serviceType.name} ${objeto.result.name}. ${objeto.result.description}`);
+            return callApiUser().then(response => {
+                var order1 = params.number;
+                var order2 = order1 - 1;                
+                if (response.status === false) {                    
+                    return callUpdateHotelServicesNoUser(order2, mirrorID).then(data => {
+                        
+                        return getServiceInformation(data.serviceId).then(result => {
+                            let object = result;
+                            return conv.ask(`${object.result.serviceType.name} ${object.result.name}. ${object.result.description}`);
 
                         });
                     });
                 } else {
-                    return callUpdateHotelServices(orden4, usuarioID).then(data => {
-                        console.log("serviceid", data);
-                        return getServiceInfortion(data.serviceId).then(resultado => {
-                            let objeto = resultado;
-                            console.log(objeto);
 
-                            return conv.ask(`${objeto.result.serviceType.name} ${objeto.result.name}. ${objeto.result.description}`);
+                    return GetStateWidget(HotelServicesWidgetID, userID).then(data => {
+                        if (data.status) {
+                            callApiHideDiary(userID);
+                            return callUpdateHotelServices(order2, userID).then(data => {
+                                
+                                return getServiceInformation(data.serviceId).then(result => {
+                                    let object = result;
+                                    return conv.ask(`${object.result.serviceType.name} ${object.result.name}. ${object.result.description}`);
 
-                        });
-                    });
-                }
-
-
-
-            });
-        case firstintent:
-            return callApiUsuario().then(respuesta => {
-                console.log(params);
-                var orden = params.number;
-                var orden2 = orden - 1;
-                console.log(orden2, usuarioID);
-                // usuarioID = usuarioID.replace('\'', '');
-                console.log(orden2, usuarioID);
-                if (respuesta.status === false) {
-                    return conv.ask('Para usar este comando debe iniciar sesión en el aplicativo móvil.')
-                } else {
-                    return callUpdateDiaries(orden2, usuarioID).then(data => {
-                        if (usuarioID === '') {
-                            return conv.ask(`Ingrese el número de habitación primero`);
+                                });
+                            });
                         } else {
-                            return conv.ask(`Mostrando agenda ${orden}`);
+                            return conv.ask(`El widget de servicios del hotel se encuentra deshabilitado`);
                         }
-
                     });
                 }
             });
-
-
-        case secondintent:
-            return callApiUsuario().then(respuesta => {
-                console.log(usuarioID);
-                if (respuesta.status === false) {
+        case showDiary:
+            return callApiUser().then(response => {                
+                var order = params.number;
+                var order2 = order - 1;                
+                if (response.status === false) {
                     return conv.ask('Para usar este comando debe iniciar sesión en el aplicativo móvil.')
                 } else {
-                    return callApiOcultarAgenda(usuarioID).then(data => {
-                        if (usuarioID === '') {
-                            return conv.ask(`Ingrese el número de habitación primero`);
+                    return GetStateWidget(DiaryWidgetID, userID).then(data => {
+                        if (data.status) {
+                            callApiHideHotelServices(userID);
+                            return callUpdateDiaries(order2, userID).then(data => {
+                                if (userID === '') {
+                                    return conv.ask(`Ingrese el número de habitación primero`);
+                                } else {
+                                    return conv.ask(`Mostrando agenda ${order}`);
+                                }
+
+                            });
                         } else {
-                            return conv.ask(`Cerrando agenda`);
+                            return conv.ask(`El widget de agenda se encuentra deshabilitado`);
+                        }
+                    });
+
+                }
+            });
+
+
+        case closeDiary:
+            return callApiUser().then(response => {                
+                if (response.status === false) {
+                    return conv.ask('Para usar este comando debe iniciar sesión en el aplicativo móvil.')
+                } else {
+
+                    return GetStateWidget(DiaryWidgetID, userID).then(data => {
+                        if (data.status) {
+                            return callApiHideDiary(userID).then(data => {
+                                if (userID === '') {
+                                    return conv.ask(`Ingrese el número de habitación primero`);
+                                } else {
+                                    return conv.ask(`Cerrando agenda`);
+                                }
+                            });
+                        } else {
+                            return conv.ask(`El widget de agenda se encuentra deshabilitado`);
+                        }
+
+                    });
+
+
+                }
+            });
+        case readDiary:
+            return callApiUser().then(response => {                
+
+                if (response.status === false) {
+                    return conv.ask('Para usar este comando debe iniciar sesión en el aplicativo móvil.')
+                } else {
+
+                    return GetStateWidget(DiaryWidgetID, userID).then(data => {
+                        if (data.status) {
+                            callApiHideHotelServices(userID);
+                            return callApiGetReadAgenda(userID).then(data => {
+                                var description = data.description;
+                                var summary = data.summary;
+                                var location = data.location;
+                                var dateTime = data.dateTime;
+                                var response = undefined;
+                                console.log()
+                                if (userID === '') {
+                                    response = conv.ask(`Ingrese el número de habitación primero`);
+                                } else if (location !== null && description === null) {
+                                    response = conv.ask(`${dateTime} ${summary} en ${location}`);
+                                } else if (location === null && description !== null) {
+                                    response = conv.ask(`${dateTime} ${summary}. Como detalle adicional, ${description} `);
+                                } else if (location !== null && description !== null) {
+                                    response = conv.ask(`${dateTime} ${summary} en ${location}. Como detalle adicional, ${description} `);
+                                } else if (location === null && description === null) {
+                                    response = conv.ask(`${dateTime} ${summary}`);
+                                }
+                                return response;
+                            })
+                        } else {
+                            return conv.ask(`El widget de agenda se encuentra deshabilitado`);
                         }
                     });
                 }
-            });
-        case thirdintent:
-            return callApiUsuario().then(respuesta => {
-                console.log(usuarioID);
 
-                if (respuesta.status === false) {
+            });
+        case readEmail:
+            return callApiUser().then(response => {
+                if (response.status === false) {
                     return conv.ask('Para usar este comando debe iniciar sesión en el aplicativo móvil.')
                 } else {
-                    return callApiGetLeerAgenda(usuarioID).then(data => {
-                        var description = data.description;
-                        var summary = data.summary;
-                        var location = data.location;
-                        var dateTime = data.dateTime;
-                        var respuesta = undefined;
-                        console.log()
-                        if (usuarioID === '') {
-                            respuesta = conv.ask(`Ingrese el número de habitación primero`);
-                        } else if (location !== null && description === null) {
-                            respuesta = conv.ask(`${dateTime} ${summary} en ${location}`);
-                        } else if (location === null && description !== null) {
-                            respuesta = conv.ask(`${dateTime} ${summary}. Como detalle adicional, ${description} `);
-                        } else if (location !== null && description !== null) {
-                            respuesta = conv.ask(`${dateTime} ${summary} en ${location}. Como detalle adicional, ${description} `);
-                        } else if (location === null && description === null) {
-                            respuesta = conv.ask(`${dateTime} ${summary}`);
+                    return GetStateWidget(EmailWidgetID, userID).then(data => {
+                        if (data.status) {
+
+                            callApiHideDiary(userID);
+                            callApiHideHotelServices(userID);
+                            return callApiGetEmailInformation(userID).then(data => {
+                                var subject = data.subject;
+                                var message = data.message;
+                                var send = `Asunto: ${subject}. Mensaje: ${message}`;                                
+                                callApiSetStartEmail(userID, send);
+                                return conv.ask(send)
+
+                            })
+                        } else {
+                            return conv.ask(`El widget de correo se encuentra deshabilitado`);
                         }
-                        return respuesta;
-                    })
+                    });
 
-                }
-
-            });
-        case fourthintent:
-            return callApiUsuario().then(respuesta => {
-                if (respuesta.status === false) {
-                    return conv.ask('Para usar este comando debe iniciar sesión en el aplicativo móvil.')
-                } else {
-                    return callApiGetEmailInformation(usuarioID).then(data => {
-                        var subject = data.subject;
-                        var message = data.message;
-                        var send = `Asunto: ${subject}. Mensaje: ${message}`;
-                        var respuesta = undefined;
-                        console.log()
-
-                        callApiSetStartEmail(usuarioID, send);
-                        return conv.ask(send)
-
-                    })
                 }
             });
 
-        case intentreademail:
-            return callApiUsuario().then(respuesta => {
-                if (respuesta.status === false) {
+        case readNews:
+            return callApiUser().then(response => {
+                if (response.status === false) {
+                    callApiHideHotelServicesNoUser(mirrorID);
 
-                    return callApiGetNewsNoUserInformation(espejoID).then(data => {
-                        console.log("NOTICIA", data);
+                    return callApiGetNewsNoUserInformation(mirrorID).then(data => {
+                        
                         var description = data.description;
                         var title = data.tittle;
-                        var send = `Título: ${title}. ${description}`;
-                        var respuesta = undefined;
-                        console.log()
+                        var send = `Título: ${title}. ${description}`;                                                
 
-                        callApiSetStartNewsNoUser(espejoID, send);
+                        callApiSetStartNewsNoUser(mirrorID, send);
                         return conv.ask(send)
 
                     })
                 } else {
-                    return callApiGetNewsInformation(usuarioID).then(data => {
-                        var description = data.description;
-                        var title = data.tittle;
-                        var send = `Título: ${title}. ${description}`;
-                        var respuesta = undefined;
-                        console.log()
+                    return GetStateWidget(NewsWidgetID, userID).then(data => {
+                        if (data.status) {
+                            callApiHideDiary(userID);
+                            callApiHideHotelServices(userID);
+                            return callApiGetNewsInformation(userID).then(data => {
+                                var description = data.description;
+                                var title = data.tittle;
+                                var send = `Título: ${title}. ${description}`;                                
+                                callApiSetStartNews(userID, send);
+                                return conv.ask(send)
 
-                        callApiSetStartNews(usuarioID, send);
-                        return conv.ask(send)
+                            })
 
-                    })
+                        } else {
+                            return conv.ask(`El widget de noticias se encuentra deshabilitado`);
+                        }
+                    });
+
                 }
 
 
             });
-        case fiftintent:
-            return callApiUsuario().then(respuesta => {
-                return callApiSetStartEmail(usuarioID).then(data => {
-                    return conv.ask(`Se inicializó el correo`);
-
-                })
+        case startEmail:
+            return callApiUser().then(response => {
+                return GetStateWidget(EmailWidgetID, userID).then(data => {
+                    if (data.status) {
+                        return callApiSetStartEmail(userID).then(data => {
+                            return conv.ask(`Se inicializó el correo`);
+                        })
+                    } else {
+                        return conv.ask(`El widget de correo se encuentra deshabilitado`);
+                    }
+                });
             });
-            // case sixintent:
-            //     console.log(params);
-            //     var roomNumber = params.number;
-            //     NumeroHabitacion = params.number;
-            //     return getMirrorID(roomNumber).then(data => {
-            //         switch (data) {
-            //             case 1:
-            //                 console.log(usuarioID);
-            //                 return conv.ask(`La habitación ${roomNumber} fue asociada correctamente a tu cuenta google`);
-            //             case 2:
-            //                 return conv.ask(`Esta habitación no cuenta con un Smart Mirror`);
-            //             case 3:
-            //                 return conv.ask(`Esta habitación no se encuentra disponible`);
-            //             case 4:
-            //                 return conv.ask(`Este número de habitación no existe`);
-            //             default:
-            //                 return conv.ask('');
-            //         }
-
-            //     });
         default:
             return conv.ask(`No entendí lo que me dijo, repita porfavor`);
 
@@ -422,26 +432,8 @@ app.fallback((conv, params) => {
 
 });
 
-// return conv.ask(`oe wachi reconchetumadre, chibolo conchetumare, que chucha hablas
-// que me has dejado con el ojo morao oe pavo conchetumare, ya no te acuerdas cuando estábamos en civa causa,
-//  me insultastes a mi vieja causa, y cuando te avance con 5 puñetes ¿que hiciste?, ni pincho pavo conchetumare,
-//   me quisistes tirar un tabazo, pero puse mi taba y te dolió mas a ti chibolo webon, si no hubiera sido por
-//    Gino, que me dijo: ¡causa controlate!, te hubiera sacado la conchetumare, te hubiera roto la nariz encima
-//     hubieras muerto oe concheutumadre, me distes pena pavo conchetumadre, ya no te acuerdas ¿cuando estábamos
-//      en andahuaylas? y ¿cuando te defendí conchetumare?, cuando te querían robar tu baboso en la esquina, parao
-//       como idiota conchetumadre, yo me acerque y los bote a esos webones porque te querían poner, pavo conchetumare
-//        hasta para eso no eres vivo gil de mierda, tecleador de mierda y todavía me amenazaste, ¿ya no te acuerdas
-//         cuando me amenazaste?, conchetumare, que me ibas a cortar la pierna, todavía mande la foto del escrinchot
-//          conchetumare, sigo esperando que me cortes la pierna gil de mierda, eres un triste webon, por facebook
-//           o whatsapp te crees maleante conchetumare, pero toda la gente sabe en persona que eres idiota, porque
-//            crees que cuando fuimos a encontrarnos con Saul te hacia mierda, porque eres una cagada pe conchetumare, Saul
-//             se dio cuenta que eres idiota, que eres apeligrao conchetumare, le tenias miedo a Saul porque te iba
-//              avanzar idiota conchetumare, ¿para eso no eres pendejo?, ahí si eso no hablas chibolo conchetumare, gil
-//               de mierda, eres un gil y morirás gil conchetumare, si quieres vamo encontrarnos en puente nuevo, vamo
-//                a mecharnos pe conchetumare, pavo de mierda`);
-
-function callUpdateHotelServices(orden, usuarioid) {
-    let data = JSON.stringify({ 'order': orden, 'userId': usuarioid });
+function callUpdateHotelServices(order, userID) {
+    let data = JSON.stringify({ 'order': order, 'userId': userID });
     console.log(data);
     return new Promise((resolve, reject) => {
         const options = {
@@ -451,14 +443,14 @@ function callUpdateHotelServices(orden, usuarioid) {
             body: data
         };
 
-        request(options, function(error, requestInternal, body) {
+        request(options, function (error, requestInternal, body) {
             resolve(JSON.parse(body));
         });
     });
 }
 
-function callUpdateHotelServicesNoUser(orden, usuarioid) {
-    let data = JSON.stringify({ 'order': orden, 'mirrorId': usuarioid });
+function callUpdateHotelServicesNoUser(order, userID) {
+    let data = JSON.stringify({ 'order': order, 'mirrorId': userID });
     console.log(data);
     return new Promise((resolve, reject) => {
         const options = {
@@ -468,16 +460,16 @@ function callUpdateHotelServicesNoUser(orden, usuarioid) {
             body: data
         };
 
-        request(options, function(error, requestInternal, body) {
+        request(options, function (error, requestInternal, body) {
             resolve(JSON.parse(body));
         });
     });
 }
 
 
-function callUpdateDiaries(orden, usuarioid) {
-    let data = JSON.stringify({ 'order': orden, 'userId': usuarioid });
-    console.log(data);
+function callUpdateDiaries(order, userID) {
+    let data = JSON.stringify({ 'order': order, 'userId': userID });
+    
     return new Promise((resolve, reject) => {
         const options = {
             url: 'http://edumoreno27-001-site2.etempurl.com/UpdateDiaries',
@@ -486,15 +478,15 @@ function callUpdateDiaries(orden, usuarioid) {
             body: data
         };
 
-        request(options, function(error, requestInternal, body) {
+        request(options, function (error, requestInternal, body) {
             resolve(body);
         });
     });
 }
 
-function callApiOcultarAgenda(usuarioid) {
-    let data = JSON.stringify({ userId: usuarioid });
-    console.log(data);
+function callApiHideDiary(userID) {
+    let data = JSON.stringify({ userId: userID });
+    
     return new Promise((resolve, reject) => {
         const options = {
             url: 'http://edumoreno27-001-site2.etempurl.com/SetAllDiary',
@@ -503,16 +495,15 @@ function callApiOcultarAgenda(usuarioid) {
             body: data
         };
 
-        request(options, function(error, requestInternal, body) {
+        request(options, function (error, requestInternal, body) {
             resolve(body);
         });
     });
 }
 
-function callApiOcultarHotelServicios(usuarioid) {
-    let data = JSON.stringify({ userId: usuarioid });
+function callApiHideHotelServices(userID) {
+    let data = JSON.stringify({ userId: userID });
 
-    console.log(data);
     return new Promise((resolve, reject) => {
         const options = {
             url: 'http://edumoreno27-001-site2.etempurl.com/SetAllHotelServices',
@@ -521,16 +512,15 @@ function callApiOcultarHotelServicios(usuarioid) {
             body: data
         };
 
-        request(options, function(error, requestInternal, body) {
+        request(options, function (error, requestInternal, body) {
             resolve(body);
         });
     });
 }
 
-function callApiOcultarHotelServiciosNoUser(espejito) {
+function callApiHideHotelServicesNoUser(espejito) {
     let data = JSON.stringify({ 'mirrorId': espejito });
 
-    console.log("DATA NO USER", data);
     return new Promise((resolve, reject) => {
         const options = {
             url: 'http://edumoreno27-001-site2.etempurl.com/SetAllHotelServicesNoUser',
@@ -539,15 +529,15 @@ function callApiOcultarHotelServiciosNoUser(espejito) {
             body: data
         };
 
-        request(options, function(error, requestInternal, body) {
+        request(options, function (error, requestInternal, body) {
             resolve(body);
         });
     });
 }
 
-function callApiGetLeerAgenda(usuarioid) {
-    let data = JSON.stringify({ userId: usuarioid });
-    console.log(data);
+function callApiGetReadAgenda(userID) {
+    let data = JSON.stringify({ userId: userID });
+    
     return new Promise((resolve, reject) => {
         const options = {
             url: 'http://edumoreno27-001-site2.etempurl.com/GetDiaryInformations',
@@ -556,15 +546,15 @@ function callApiGetLeerAgenda(usuarioid) {
             body: data
         };
 
-        request(options, function(error, requestInternal, body) {
+        request(options, function (error, requestInternal, body) {
             resolve(JSON.parse(body));
         });
     });
 }
 
-function callApiGetEmailInformation(usuarioid) {
-    let data = JSON.stringify({ userId: usuarioid });
-    console.log(data);
+function callApiGetEmailInformation(userID) {
+    let data = JSON.stringify({ userId: userID });
+    
     return new Promise((resolve, reject) => {
         const options = {
             url: 'http://edumoreno27-001-site2.etempurl.com/GetEmailInformations',
@@ -573,15 +563,15 @@ function callApiGetEmailInformation(usuarioid) {
             body: data
         };
 
-        request(options, function(error, requestInternal, body) {
+        request(options, function (error, requestInternal, body) {
             resolve(JSON.parse(body));
         });
     });
 }
 
-function callApiGetNewsInformation(usuarioid) {
-    let data = JSON.stringify({ userId: usuarioid });
-    console.log(data);
+function callApiGetNewsInformation(userID) {
+    let data = JSON.stringify({ userId: userID });
+    
     return new Promise((resolve, reject) => {
         const options = {
             url: 'http://edumoreno27-001-site2.etempurl.com/GetNewsInformations',
@@ -590,7 +580,7 @@ function callApiGetNewsInformation(usuarioid) {
             body: data
         };
 
-        request(options, function(error, requestInternal, body) {
+        request(options, function (error, requestInternal, body) {
             resolve(JSON.parse(body));
         });
     });
@@ -598,7 +588,7 @@ function callApiGetNewsInformation(usuarioid) {
 
 function callApiGetNewsNoUserInformation(mirroId) {
     let data = JSON.stringify({ mirrorId: mirroId });
-    console.log(data);
+    
     return new Promise((resolve, reject) => {
         const options = {
             url: 'http://edumoreno27-001-site2.etempurl.com/GetNewsNoUserInformations',
@@ -607,7 +597,7 @@ function callApiGetNewsNoUserInformation(mirroId) {
             body: data
         };
 
-        request(options, function(error, requestInternal, body) {
+        request(options, function (error, requestInternal, body) {
             resolve(JSON.parse(body));
         });
     });
@@ -616,27 +606,21 @@ function callApiGetNewsNoUserInformation(mirroId) {
 
 
 
-function callApiSetStartEmail(usuarioid, description) {
-    let data = JSON.stringify({ userId: usuarioid, description: description });
-    console.log(data);
-
+function callApiSetStartEmail(userID, description) {
+    let data = JSON.stringify({ userId: userID, description: description });
     const options = {
         url: 'http://edumoreno27-001-site2.etempurl.com/SetStartEmail',
         method: 'POST',
         headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
         body: data
     };
-
-    request(options, function(error, requestInternal, body) {
+    request(options, function (error, requestInternal, body) {
         resolve(body);
     });
-
 }
 
-function callApiSetStartNews(usuarioid, description) {
-    let data = JSON.stringify({ userId: usuarioid, description: description });
-    console.log(data);
-
+function callApiSetStartNews(userID, description) {
+    let data = JSON.stringify({ userId: userID, description: description });
     const options = {
         url: 'http://edumoreno27-001-site2.etempurl.com/SetStartNews',
         method: 'POST',
@@ -644,7 +628,7 @@ function callApiSetStartNews(usuarioid, description) {
         body: data
     };
 
-    request(options, function(error, requestInternal, body) {
+    request(options, function (error, requestInternal, body) {
         resolve(body);
     });
 
@@ -652,8 +636,6 @@ function callApiSetStartNews(usuarioid, description) {
 
 function callApiSetStartNewsNoUser(mirrorID, description) {
     let data = JSON.stringify({ mirrorId: mirrorID, description: description });
-    console.log(data);
-
     const options = {
         url: 'http://edumoreno27-001-site2.etempurl.com/SetStartNewsNoUser',
         method: 'POST',
@@ -661,69 +643,11 @@ function callApiSetStartNewsNoUser(mirrorID, description) {
         body: data
     };
 
-    request(options, function(error, requestInternal, body) {
+    request(options, function (error, requestInternal, body) {
         resolve(body);
     });
 
 }
-// function callApiUsuario(mirrorID) {
-//     return new Promise((resolve, reject) => {
-//         const options = {
-//             url: 'http://edumoreno27-001-site2.etempurl.com/GetUser',
-//             method: 'POST',
-//             headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
-//             body: JSON.stringify({ mirrorID: mirrorID })
-//         };
-
-//         request(options, function (error, requestInternal, body) {
-//             let usuario = JSON.parse(body);
-//             resolve(usuario.id);
-//             // usuarioID = usuario.id;
-//         });
-//     });
-// }
-
-function getMirrorID(roomNumber) {
-    return new Promise((resolve, reject) => {
-        const options = {
-            url: 'https://tp-ires-api.azurewebsites.net/v1/management/habitacion/' + roomNumber,
-            method: 'GET',
-            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' }
-
-        };
-
-        request(options, function(error, requestInternal, body) {
-
-
-            let respuesta = JSON.parse(body);
-
-            if (respuesta.statusCode === 200) {
-                if (respuesta.result) {
-                    if (respuesta.result.mirrorId !== 0) {
-                        return callApiUsuario(respuesta.result.mirrorId).then(data => {
-                            usuarioID = data;
-                            resolve(1);
-                            return;
-                        });
-                    } else {
-                        resolve(2);
-                    }
-                } else {
-                    resolve(3);
-                }
-
-            } else {
-                resolve(4);
-            }
-
-
-
-            // usuarioID = usuario.id;
-
-        });
-    });
-}
-
 
 function getServicesHotel() {
     return new Promise((resolve, reject) => {
@@ -734,16 +658,14 @@ function getServicesHotel() {
 
         };
 
-        request(options, function(error, requestInternal, body) {
-
-
-            let respuesta = JSON.parse(body);
-            resolve(respuesta);
+        request(options, function (error, requestInternal, body) {
+            let response = JSON.parse(body);
+            resolve(response);
         });
     });
 }
 
-function getHabitacionHotelByMirrorID(MirrorID) {
+function getHotelRoomByMirrorID(MirrorID) {
     return new Promise((resolve, reject) => {
         const options = {
             url: 'https://tp-ires-api.azurewebsites.net/v1/management/mirror/' + MirrorID,
@@ -751,17 +673,14 @@ function getHabitacionHotelByMirrorID(MirrorID) {
             headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' }
 
         };
-
-        request(options, function(error, requestInternal, body) {
-
-
-            let respuesta = JSON.parse(body);
-            resolve(respuesta);
+        request(options, function (error, requestInternal, body) {
+            let response = JSON.parse(body);
+            resolve(response);
         });
     });
 }
 
-function getServiceInfortion(ServideID) {
+function getServiceInformation(ServideID) {
     return new Promise((resolve, reject) => {
         const options = {
             url: 'https://tp-ires-api.azurewebsites.net/v1/services/' + ServideID,
@@ -769,17 +688,14 @@ function getServiceInfortion(ServideID) {
             headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' }
 
         };
-
-        request(options, function(error, requestInternal, body) {
-
-
-            let respuesta = JSON.parse(body);
-            resolve(respuesta);
+       request(options, function (error, requestInternal, body) {
+            let response = JSON.parse(body);
+            resolve(response);
         });
     });
 }
 
-function getMirrorIDReserva(roomNumber) {
+function getMirrorIDReservation(roomNumber) {
     return new Promise((resolve, reject) => {
         const options = {
             url: 'https://tp-ires-api.azurewebsites.net/v1/management/habitacion/' + roomNumber,
@@ -788,54 +704,52 @@ function getMirrorIDReserva(roomNumber) {
 
         };
 
-        request(options, function(error, requestInternal, body) {
+        request(options, function (error, requestInternal, body) {
 
-            let respuesta = JSON.parse(body);
-            resolve(respuesta);
+            let response = JSON.parse(body);
+            resolve(response);
         });
     });
 }
 
-function getServiceIDByOrder(usuarioId, orderID) {
+function getServiceIDByOrder(userID, orderID) {
     return new Promise((resolve, reject) => {
         const options = {
             url: 'http://edumoreno27-001-site2.etempurl.com/GetServiceId',
             method: 'POST',
             headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userID: usuarioId, order: orderID })
+            body: JSON.stringify({ userID: userID, order: orderID })
         };
 
-        request(options, function(error, requestInternal, body) {
+        request(options, function (error, requestInternal, body) {
             let data = JSON.parse(body);
-            resolve(data);
-            // usuarioID = usuario.id;
+            resolve(data);            
         });
     });
 }
 
-function ReservarServicio(estanciaid, servicioid, fecha, platoid) {
+function BookService(stayid, serviceid, date, dishid) {
     return new Promise((resolve, reject) => {
         const options = {
             url: 'https://tp-ires-api.azurewebsites.net/v1/reservas',
             method: 'POST',
             headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                estanciaId: estanciaid,
-                servicioId: servicioid,
-                fechaReserva: fecha,
-                platoId: platoid
+                estanciaId: stayid,
+                servicioId: serviceid,
+                fechaReserva: date,
+                platoId: dishid
             })
         };
 
-        request(options, function(error, requestInternal, body) {
+        request(options, function (error, requestInternal, body) {
             let data = JSON.parse(body);
-            resolve(data);
-            // usuarioID = usuario.id;
+            resolve(data);            
         });
     });
 }
 
-function UpdateActionMusic(action, userId, userIDd) {
+function UpdateActionMusic(action, mirrorId, userID) {
     return new Promise((resolve, reject) => {
         const options = {
             url: 'http://edumoreno27-001-site2.etempurl.com/UpdateMusicAction',
@@ -843,21 +757,19 @@ function UpdateActionMusic(action, userId, userIDd) {
             headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 action: action,
-                mirrorId: userId,
-                userId: userIDd
+                mirrorId: mirrorId,
+                userId: userID
 
             })
         };
 
-        request(options, function(error, requestInternal, body) {
-
-            resolve(body);
-            // usuarioID = usuario.id;
+        request(options, function (error, requestInternal, body) {
+            resolve(body);            
         });
     });
 }
 
-function UpdateActionMusicNoUser(action, userId) {
+function UpdateActionMusicNoUser(action, mirrorId) {
     return new Promise((resolve, reject) => {
         const options = {
             url: 'http://edumoreno27-001-site2.etempurl.com/UpdateMusicActionWithoutUser',
@@ -865,17 +777,36 @@ function UpdateActionMusicNoUser(action, userId) {
             headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 action: action,
-                mirrorId: userId
+                mirrorId: mirrorId
 
             })
         };
 
-        request(options, function(error, requestInternal, body) {
+        request(options, function (error, requestInternal, body) {
 
-            resolve(body);
-            // usuarioID = usuario.id;
+            resolve(body);            
         });
     });
 }
-// Set the DialogflowApp object to handle the HTTPS POST request.
+function GetStateWidget(widgetID, userId) {
+    return new Promise((resolve, reject) => {
+        const options = {
+            url: 'http://edumoreno27-001-site2.etempurl.com/GetStateWidget',
+            method: 'POST',
+            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                gadgetID: widgetID,
+                userID: userId
+
+            })
+        };
+
+        request(options, function (error, requestInternal, body) {
+            let data = JSON.parse(body);
+            resolve(data);            
+        });
+    });
+}
+
+
 exports.dialogflowFirebaseFulfillment = functions.https.onRequest(app);
